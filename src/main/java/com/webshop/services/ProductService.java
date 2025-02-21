@@ -1,16 +1,16 @@
 package com.webshop.services;
 
-import com.webshop.dto.ProductDto;
+import com.webshop.dto.ProductInputDto;
 import com.webshop.entities.Product;
 import org.springframework.data.domain.Page;
 
-import java.util.List;
-
 public interface ProductService {
 
-    Product findProductById(Integer id);
+    Product createProduct(ProductInputDto productInputDto);
 
-    Page<ProductDto> getAllProductsPaginatedAsDto(int page, int size);
+    Product getProductById(Integer id);
 
-    Page<ProductDto> findProductsByTitlePaginatedAsDto(String searchQuery, int page, int size);
+    Page<ProductInputDto> getAllProductsPaginatedAsDto(int page, int size);
+
+    Page<ProductInputDto> findProductsByTitlePaginatedAsDto(String searchQuery, int page, int size);
 }

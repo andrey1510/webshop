@@ -1,6 +1,13 @@
 package com.webshop.entities;
 
-import jakarta.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +24,7 @@ public class OrderItem {
 
     @ManyToOne
     @JoinColumn(name = "customer_order_id", nullable = false)
-    private CustomerOrder customerOrder;
+    private Order order;
 
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)

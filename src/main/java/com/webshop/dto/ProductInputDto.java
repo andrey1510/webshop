@@ -1,18 +1,18 @@
 package com.webshop.dto;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 @RequiredArgsConstructor
 @AllArgsConstructor
 @Data
-public class ProductDto {
+public class ProductInputDto {
 
-    private Integer id;
     private String title;
+    private String description;
     private Double price;
-    private String imageUrl;
+    private MultipartFile image;
 
 }
