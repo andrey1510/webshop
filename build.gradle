@@ -14,7 +14,7 @@ java {
 }
 
 bootJar {
-    archiveFileName = 'blog-app.jar'
+    archiveFileName = 'webshop.jar'
 }
 
 configurations {

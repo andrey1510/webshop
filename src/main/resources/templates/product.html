@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Товар</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .product-container {
+            max-width: 600px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .product-info {
+            margin-top: 15px;
+        }
+        .product-info h2 {
+            margin-bottom: 10px;
+        }
+        .product-info p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+
+<body>
+<div class="product-container">
+    <!-- Проверка наличия товара -->
+    <div th:if="${product != null}">
+
+        <!-- Информация о товаре -->
+        <div class="product-info">
+            <h2 th:text="${product.title}">Название товара</h2>
+            <p><strong>Описание:</strong> <span th:text="${product.description}">Описание товара</span></p>
+            <p><strong>Цена:</strong> <span th:text="${#numbers.formatDecimal(product.price, 2)} + ' ₽'">Цена продукта</span></p>
+        </div>
+
+        <!-- Изображение товара -->
+        <img th:src="@{${product.imagePath}}" alt="Изображение товара" />
+
+    </div>
+
+
+
+
+    <!-- Если товар не найден -->
+    <div th:if="${product == null}">
+        <p>Товар не найден.</p>
+    </div>
+
+</div>
+</body>
+</html>

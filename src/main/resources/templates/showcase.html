@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Витрина товаров</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .product-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .product-card {
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .pagination {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .pagination button {
+            margin: 0 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .filters {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+<h1>Витрина товаров</h1>
+
+<!-- Форма фильтрации -->
+<form th:method="get" th:action="@{/web-shop/products}" class="filters">
+    <label for="title">Название:</label>
+    <input type="text" id="title" name="title" th:value="${title}" />
+
+    <label for="minPrice">Цена от:</label>
+    <input type="number" id="minPrice" name="minPrice" th:value="${minPrice}" step="0.01" />
+
+    <label for="maxPrice">до:</label>
+    <input type="number" id="maxPrice" name="maxPrice" th:value="${maxPrice}" step="0.01" />
+
+    <label for="sort">Сортировка:</label>
+    <select id="sort" name="sort">
+        <option value="asc" th:selected="${sort} == 'asc'">По алфавиту (возрастание)</option>
+        <option value="desc" th:selected="${sort} == 'desc'">По алфавиту (убывание)</option>
+        <option value="price" th:selected="${sort} == 'price'">По цене (возрастание)</option>
+    </select>
+
+    <button type="submit">Применить фильтры</button>
+</form>
+
+<!-- Список товаров -->
+<div class="product-container">
+    <div th:each="product : ${products.content}" class="product-card">
+        <h3>
+            <a th:href="@{/web-shop/products/{id}(id=${product.id})}" th:text="${product.title}">Название товара</a>
+        </h3>
+        <h3 th:text="${product.title}">Название товара</h3>
+        <p th:text="${#numbers.formatDecimal(product.price, 2)} + ' ₽'">Цена товара</p>
+        <img th:src="@{${product.imagePath}}" alt="Изображение товара" style="max-width: 100%; height: auto;" />
+    </div>
+</div>
+
+<!-- Пагинация -->
+<div class="pagination">
+    <button th:if="${currentPage > 0}" th:onclick="'window.location.href=\'' + @{/web-shop/products(page=${currentPage - 1}, size=${pageSize}, title=${title}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort}) + '\''">Предыдущая</button>
+    <span th:text="${currentPage + 1}">Страница</span>
+    <button th:if="${currentPage < totalPages - 1}" th:onclick="'window.location.href=\'' + @{/web-shop/products(page=${currentPage + 1}, size=${pageSize}, title=${title}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort}) + '\''">Следующая</button>
+</div>
+</body>
+</html>

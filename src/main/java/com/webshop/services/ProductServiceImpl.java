@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -58,15 +60,27 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Page<ProductInputDto> getAllProductsPaginatedAsDto(int page, int size) {
-        return productRepository.findAllAsDto(PageRequest.of(page, size));
-    }
+    public Page<Product> getProducts(String title, Double minPrice, Double maxPrice, String sort, int page, int size) {
+        Sort.Direction direction = Sort.Direction.ASC;
+        String property = "title";
 
-    @Override
-    public Page<ProductInputDto> findProductsByTitlePaginatedAsDto(String searchQuery, int page, int size) {
-        return productRepository.findProductsByTitleAsDto(searchQuery, PageRequest.of(page, size));
-    }
+        if ("price".equalsIgnoreCase(sort)) property = "price";
+        else if ("desc".equalsIgnoreCase(sort)) direction = Sort.Direction.DESC;
 
+        Pageable pageable = PageRequest.of(page, size, direction, property);
+
+        if (title != null && !title.isEmpty()) {
+            return productRepository.findByTitleContaining(title, pageable);
+        } else if (minPrice != null && maxPrice != null) {
+            return productRepository.findByPriceBetween(minPrice, maxPrice, pageable);
+        } else if (minPrice != null) {
+            return productRepository.findByPriceGreaterThan(minPrice, pageable);
+        } else if (maxPrice != null) {
+            return productRepository.findByPriceLessThan(maxPrice, pageable);
+        } else {
+            return productRepository.findAll(pageable);
+        }
+    }
 
     private void validateImage(MultipartFile file) {
         if (!ImageUtils.isValidImageExtension(file.getOriginalFilename())) {

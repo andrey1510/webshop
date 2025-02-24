@@ -2,8 +2,9 @@ package com.webshop.entities;
 
 
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -18,15 +19,16 @@ import java.util.Set;
 @AllArgsConstructor
 @Data
 @Entity
-public class Order {
+public class CustomerOrder {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
-    @OneToMany(mappedBy = "productOrder", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "customerOrder", cascade = CascadeType.ALL)
     private Set<OrderItem> items;
 
 }

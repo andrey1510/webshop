@@ -34,23 +34,23 @@
     </style>
 </head>
 <body>
-<h1>Создание нового продукта</h1>
+<h1>Создание нового товара</h1>
 <form th:action="@{/product-creator}" method="post" enctype="multipart/form-data">
     <!-- Поле title -->
     <div class="form-group">
-        <label for="title">Название продукта:</label>
+        <label for="title">Название товара:</label>
         <input type="text" id="title" name="title" required />
     </div>
 
     <!-- Поле description -->
     <div class="form-group">
-        <label for="description">Описание продукта:</label>
+        <label for="description">Описание товара:</label>
         <textarea id="description" name="description" rows="4" required></textarea>
     </div>
 
     <!-- Поле price -->
     <div class="form-group">
-        <label for="price">Цена продукта:</label>
+        <label for="price">Цена товара:</label>
         <input type="number" id="price" name="price" step="0.01" required />
     </div>
 
@@ -61,7 +61,7 @@
     </div>
 
     <!-- Кнопка отправки формы -->
-    <button type="submit">Создать продукт</button>
+    <button type="submit">Создать товар</button>
 </form>
 </body>
 </html>

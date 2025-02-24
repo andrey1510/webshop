@@ -10,7 +10,5 @@ public interface ProductService {
 
     Product getProductById(Integer id);
 
-    Page<ProductInputDto> getAllProductsPaginatedAsDto(int page, int size);
-
-    Page<ProductInputDto> findProductsByTitlePaginatedAsDto(String searchQuery, int page, int size);
+    Page<Product> getProducts(String title, Double minPrice, Double maxPrice, String sort, int page, int size);
 }
