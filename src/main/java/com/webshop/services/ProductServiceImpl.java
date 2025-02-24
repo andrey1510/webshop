@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -32,6 +33,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
 
     @Override
+    @Transactional
     public Product createProduct(ProductInputDto productInputDto){
 
         String uniqueFileName = null;
@@ -55,17 +57,25 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Product getProductById(Integer id) {
         return productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException("Продукт не найден"));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<Product> getProducts(String title, Double minPrice, Double maxPrice, String sort, int page, int size) {
         Sort.Direction direction = Sort.Direction.ASC;
         String property = "title";
 
-        if ("price".equalsIgnoreCase(sort)) property = "price";
-        else if ("desc".equalsIgnoreCase(sort)) direction = Sort.Direction.DESC;
+        if ("title-desc".equalsIgnoreCase(sort)) {
+            direction = Sort.Direction.DESC;
+        } else if ("price-asc".equalsIgnoreCase(sort)) {
+            property = "price";
+        } else if ("price-desc".equalsIgnoreCase(sort)) {
+            property = "price";
+            direction = Sort.Direction.DESC;
+        }
 
         Pageable pageable = PageRequest.of(page, size, direction, property);
 

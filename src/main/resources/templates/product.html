@@ -44,16 +44,18 @@
         <div class="product-info">
             <h2 th:text="${product.title}">Название товара</h2>
             <p><strong>Описание:</strong> <span th:text="${product.description}">Описание товара</span></p>
-            <p><strong>Цена:</strong> <span th:text="${#numbers.formatDecimal(product.price, 2)} + ' ₽'">Цена продукта</span></p>
+            <p><strong>Цена:</strong> <span th:text="${product.price} + ' ₽'">Цена продукта</span></p>
         </div>
 
         <!-- Изображение товара -->
-        <img th:src="@{${product.imagePath}}" alt="Изображение товара" />
+        <div th:if="${product.imagePath != null}">
+            <img th:src="@{'/uploads/' + ${product.imagePath}}" alt="Изображение" style="max-width: 100%; height: auto; max-height: 200px;">
+        </div>
+        <div th:if="${product.imagePath == null}">
+            <p>  </p>
+        </div>
 
     </div>
-
-
-
 
     <!-- Если товар не найден -->
     <div th:if="${product == null}">

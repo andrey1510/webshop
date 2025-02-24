@@ -22,7 +22,7 @@ public class ShopController {
     public String getProduct(@PathVariable("id") Integer id, Model model) {
         Product product = productService.getProductById(id);
         model.addAttribute("product", product);
-        return "showcase";
+        return "product";
     }
 
     @GetMapping("/products")

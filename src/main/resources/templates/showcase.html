@@ -33,6 +33,12 @@
             margin-bottom: 20px;
         }
     </style>
+    <script th:inline="javascript">
+        function changePageSize(size) {
+            let url = '?page=0&size=' + size;
+            window.location.href = url;
+        }
+    </script>
 </head>
 <body>
 <h1>Витрина товаров</h1>
@@ -50,9 +56,10 @@
 
     <label for="sort">Сортировка:</label>
     <select id="sort" name="sort">
-        <option value="asc" th:selected="${sort} == 'asc'">По алфавиту (возрастание)</option>
-        <option value="desc" th:selected="${sort} == 'desc'">По алфавиту (убывание)</option>
-        <option value="price" th:selected="${sort} == 'price'">По цене (возрастание)</option>
+        <option value="title-asc" th:selected="${sort} == 'title-asc'">По алфавиту (возрастание)</option>
+        <option value="title-desc" th:selected="${sort} == 'title-desc'">По алфавиту (убывание)</option>
+        <option value="price-asc" th:selected="${sort} == 'price-asc'">По цене (возрастание)</option>
+        <option value="price-desc" th:selected="${sort} == 'price-desc'">По цене (убывание)</option>
     </select>
 
     <button type="submit">Применить фильтры</button>
@@ -64,17 +71,39 @@
         <h3>
             <a th:href="@{/web-shop/products/{id}(id=${product.id})}" th:text="${product.title}">Название товара</a>
         </h3>
-        <h3 th:text="${product.title}">Название товара</h3>
-        <p th:text="${#numbers.formatDecimal(product.price, 2)} + ' ₽'">Цена товара</p>
-        <img th:src="@{${product.imagePath}}" alt="Изображение товара" style="max-width: 100%; height: auto;" />
+        <p th:text="${product.price} + ' ₽'">Цена товара</p>
+        <div th:if="${product.imagePath != null}">
+            <img th:src="@{'/uploads/' + ${product.imagePath}}" alt="Изображение" style="max-width: 100%; height: auto; max-height: 200px;">
+        </div>
+        <div th:if="${product.imagePath == null}">
+            <p>  </p>
+        </div>
     </div>
 </div>
 
 <!-- Пагинация -->
-<div class="pagination">
-    <button th:if="${currentPage > 0}" th:onclick="'window.location.href=\'' + @{/web-shop/products(page=${currentPage - 1}, size=${pageSize}, title=${title}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort}) + '\''">Предыдущая</button>
-    <span th:text="${currentPage + 1}">Страница</span>
-    <button th:if="${currentPage < totalPages - 1}" th:onclick="'window.location.href=\'' + @{/web-shop/products(page=${currentPage + 1}, size=${pageSize}, title=${title}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort}) + '\''">Следующая</button>
+<div>
+    <span th:text="'Страница ' + (${currentPage + 1}) + ' из ' + ${totalPages}"></span>
+    <nav>
+        <ul>
+            <li th:if="${currentPage > 0}">
+                <a th:href="@{/web-shop/products(page=${currentPage - 1}, size=${pageSize}, title=${title}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort})}">Предыдущая</a>
+            </li>
+            <li th:if="${currentPage < totalPages - 1}">
+                <a th:href="@{/web-shop/products(page=${currentPage + 1}, size=${pageSize}, title=${title}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort})}">Следующая</a>
+            </li>
+        </ul>
+    </nav>
 </div>
+<div>
+    <label for="pageSizeSelector">Товаров на странице:</label>
+    <div>
+        <button onclick="changePageSize(2)" th:class="${pageSize == 2 ? 'active' : ''}">2</button>
+        <button onclick="changePageSize(3)" th:class="${pageSize == 4 ? 'active' : ''}">4</button>
+        <button onclick="changePageSize(50)" th:class="${pageSize == 50 ? 'active' : ''}">50</button>
+        <button onclick="changePageSize(100)" th:class="${pageSize == 100 ? 'active' : ''}">100</button>
+    </div>
+</div>
+
 </body>
 </html>
