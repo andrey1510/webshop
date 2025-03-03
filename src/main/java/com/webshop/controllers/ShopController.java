@@ -1,6 +1,9 @@
 package com.webshop.controllers;
 
+import com.webshop.entities.CustomerOrder;
+import com.webshop.entities.OrderItem;
 import com.webshop.entities.Product;
+import com.webshop.services.CartService;
 import com.webshop.services.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -8,6 +11,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -17,11 +21,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class ShopController {
 
     private final ProductService productService;
+    private final CartService cartService;
 
     @GetMapping("/products/{id}")
     public String getProduct(@PathVariable("id") Integer id, Model model) {
         Product product = productService.getProductById(id);
         model.addAttribute("product", product);
+
+        CustomerOrder cart = cartService.getCurrentCart();
+        OrderItem cartItem = cartService.findCartItemByProductId(cart, id);
+        model.addAttribute("cartQuantity", cartItem != null ? cartItem.getQuantity() : 0);
+
         return "product";
     }
 
@@ -49,5 +59,36 @@ public class ShopController {
         return "showcase";
     }
 
+    @GetMapping
+    public String getCart(Model model) {
+        CustomerOrder cart = cartService.getCurrentCart();
+
+        Double totalPrice = cartService.calculateTotalPrice(cart);
+
+        model.addAttribute("cart", cart);
+        model.addAttribute("totalPrice", totalPrice);
+
+        return "cart";
+    }
+
+    @PostMapping("/cart/add")
+    public String addCartItem(@RequestParam("productId") Integer productId,
+                              @RequestParam("quantity") Integer quantity) {
+        cartService.addItemToCart(productId, quantity);
+        return "redirect:/web-shop/cart";
+    }
+
+    @PostMapping("/cart/update")
+    public String updateCartItem(@RequestParam("productId") Integer productId,
+                                 @RequestParam("quantity") Integer quantity) {
+        cartService.updateItemQuantity(productId, quantity);
+        return "redirect:/web-shop/cart";
+    }
+
+    @PostMapping("/cart/remove")
+    public String removeCartItem(@RequestParam("productId") Integer productId) {
+        cartService.removeCartItem(productId);
+        return "redirect:/web-shop/cart";
+    }
 
 }

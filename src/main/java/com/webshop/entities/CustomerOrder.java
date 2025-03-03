@@ -2,6 +2,7 @@ package com.webshop.entities;
 
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -9,10 +10,12 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jdk.jfr.Timestamp;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @RequiredArgsConstructor
@@ -30,5 +33,8 @@ public class CustomerOrder {
 
     @OneToMany(mappedBy = "customerOrder", cascade = CascadeType.ALL)
     private Set<OrderItem> items;
+
+    @Timestamp
+    private LocalDateTime timestamp;
 
 }

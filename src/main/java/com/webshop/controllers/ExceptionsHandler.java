@@ -5,7 +5,6 @@ import com.webshop.exceptions.ProductNotFoundException;
 import com.webshop.exceptions.WrongImageTypeException;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -13,7 +12,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ControllerAdvice
-@RequiredArgsConstructor
 public class ExceptionsHandler {
 
     @ExceptionHandler(WrongImageTypeException.class)
