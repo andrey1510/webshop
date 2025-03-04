@@ -2,13 +2,14 @@ package com.webshop.services;
 
 import com.webshop.entities.CustomerOrder;
 import com.webshop.entities.OrderItem;
-import org.springframework.transaction.annotation.Transactional;
 
 public interface CartService {
 
     CustomerOrder getCurrentCart();
 
     CustomerOrder createNewCart();
+
+    CustomerOrder completeOrder();
 
     Double calculateTotalPrice(CustomerOrder cart);
 

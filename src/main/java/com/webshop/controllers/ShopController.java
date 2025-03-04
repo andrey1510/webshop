@@ -2,8 +2,10 @@ package com.webshop.controllers;
 
 import com.webshop.entities.CustomerOrder;
 import com.webshop.entities.OrderItem;
+import com.webshop.entities.OrderStatus;
 import com.webshop.entities.Product;
 import com.webshop.services.CartService;
+import com.webshop.services.CustomerOrderService;
 import com.webshop.services.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,6 +17,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.List;
+
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/web-shop")
@@ -22,14 +26,15 @@ public class ShopController {
 
     private final ProductService productService;
     private final CartService cartService;
+    private final CustomerOrderService customerOrderService;
 
     @GetMapping("/products/{id}")
-    public String getProduct(@PathVariable("id") Integer id, Model model) {
-        Product product = productService.getProductById(id);
+    public String getProduct(@PathVariable("id") Integer productId, Model model) {
+        Product product = productService.getProductById(productId);
         model.addAttribute("product", product);
 
         CustomerOrder cart = cartService.getCurrentCart();
-        OrderItem cartItem = cartService.findCartItemByProductId(cart, id);
+        OrderItem cartItem = cartService.findCartItemByProductId(cart, productId);
         model.addAttribute("cartQuantity", cartItem != null ? cartItem.getQuantity() : 0);
 
         return "product";
@@ -75,20 +80,52 @@ public class ShopController {
     public String addCartItem(@RequestParam("productId") Integer productId,
                               @RequestParam("quantity") Integer quantity) {
         cartService.addItemToCart(productId, quantity);
-        return "redirect:/web-shop/cart";
+        return "cart";
     }
 
     @PostMapping("/cart/update")
     public String updateCartItem(@RequestParam("productId") Integer productId,
                                  @RequestParam("quantity") Integer quantity) {
         cartService.updateItemQuantity(productId, quantity);
-        return "redirect:/web-shop/cart";
+        return "cart";
     }
 
     @PostMapping("/cart/remove")
     public String removeCartItem(@RequestParam("productId") Integer productId) {
         cartService.removeCartItem(productId);
-        return "redirect:/web-shop/cart";
+        return "cart";
     }
 
+    @PostMapping("/cart/checkout")
+    public String completed() {
+        CustomerOrder completedOrder = cartService.completeOrder();
+        return "redirect:/web-shop/orders/" + completedOrder.getId();
+    }
+
+    @GetMapping("/orders/{id}")
+    public String getOrder(@PathVariable("id") Integer orderId, Model model) {
+        CustomerOrder order = customerOrderService.getOrderById(orderId);
+
+        //ToDo
+        if (order == null || !order.getStatus().equals(OrderStatus.COMPLETED)) {
+            model.addAttribute("error", "Оформленный заказ не найден.");
+            return "error";
+        }
+
+        model.addAttribute("order", order);
+        return "order";
+    }
+
+    @GetMapping("/orders")
+    public String getAllOrders(Model model) {
+
+        List<CustomerOrder> completedOrders = customerOrderService.getCompletedOrders();
+
+        Double totalPrice = customerOrderService.getTotalPriceOfCompletedOrders();
+
+        model.addAttribute("orders", completedOrders);
+        model.addAttribute("totalPrice", totalPrice);
+
+        return "orders";
+    }
 }

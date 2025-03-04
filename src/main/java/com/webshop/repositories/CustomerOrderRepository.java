@@ -14,4 +14,7 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, In
     Optional<CustomerOrder> findByStatus(OrderStatus status);
 
     List<CustomerOrder> findAllByStatus(OrderStatus status);
+
+
+
 }

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Заказ</title>
+</head>
+<body>
+
+<h1>Товары в заказе</h1>
+
+<table border="1">
+    <thead>
+    <tr>
+        <th>Изображение</th>
+        <th>Название</th>
+        <th>Цена</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="item : ${order.items}">
+        <td>
+            <img th:src="'/uploads/' + ${item.product.imagePath}" alt="Изображение" style="max-width: 100px;">
+        </td>
+        <td th:text="${item.product.title}">Название товара</td>
+        <td th:text="${item.product.price}">Цена товара</td>
+    </tr>
+    </tbody>
+</table>
+
+<h2>Общая стоимость заказа: <span th:text="${order.orderPrice}">0.00</span></h2>
+</body>
+</html>

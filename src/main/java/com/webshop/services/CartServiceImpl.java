@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 
 @RequiredArgsConstructor
@@ -37,8 +38,27 @@ public class CartServiceImpl implements CartService{
         return customerOrderRepository.save(cart);
     }
 
-    @Override
     @Transactional
+    @Override
+    public CustomerOrder completeOrder() {
+
+        CustomerOrder currentCart = getCurrentCart();
+
+        //ToDo
+        if (currentCart.getItems().isEmpty()) throw new IllegalStateException("Корзина пустая.");
+
+        currentCart.setStatus(OrderStatus.COMPLETED);
+        currentCart.setTimestamp(LocalDateTime.now());
+        currentCart.setCompletedOrderPrice(calculateTotalPrice(currentCart));
+
+        customerOrderRepository.save(currentCart);
+
+        createNewCart();
+
+        return currentCart;
+    }
+
+    @Override
     public Double calculateTotalPrice(CustomerOrder cart) {
         return cart.getItems().stream()
             .mapToDouble(item -> item.getProduct().getPrice() * item.getQuantity())

@@ -6,6 +6,8 @@
 <body>
 <h1>Корзина</h1>
 
+<!-- Товары в корзине -->
+
 <table border="1">
     <thead>
     <tr>
@@ -25,6 +27,14 @@
     </tbody>
 </table>
 
+<!-- Общая стоимость корзины -->
+
 <h2>Общая стоимость корзины: <span th:text="${totalPrice}">0.00</span></h2>
+
+<!-- Оформление заказа -->
+<form th:action="@{/web-shop/cart/checkout}" method="post">
+    <button type="submit">Оформить заказ</button>
+</form>
+
 </body>
 </html>

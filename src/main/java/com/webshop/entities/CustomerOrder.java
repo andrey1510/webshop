@@ -37,4 +37,7 @@ public class CustomerOrder {
     @Timestamp
     private LocalDateTime timestamp;
 
+    @Column
+    private Double completedOrderPrice;
+
 }

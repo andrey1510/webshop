@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Список заказов</title>
+</head>
+<body>
+<h1>Список заказов</h1>
+
+<!-- Если нет завершённых заказов -->
+<div th:if="${orders.isEmpty()}">
+    <p>У вас пока нет завершённых заказов.</p>
+</div>
+
+<!-- Список завершённых заказов -->
+<table border="1" th:if="${not #lists.isEmpty(orders)}">
+    <thead>
+    <tr>
+        <th>Номер заказа</th>
+        <th>Дата оформления</th>
+        <th>Сумма заказа</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="order : ${orders}">
+        <td>
+            <a th:href="@{/web-shop/orders/{id}(id=${order.id})}" th:text="'Заказ № ' + ${order.id}">Заказ № 1</a>
+        </td>
+        <td th:text="${#temporals.format(order.timestamp, 'dd.MM.yyyy HH:mm')}">01.02.2024 15:30</td>
+        <td th:text="${order.completedOrderPrice} + ' ₽'">0 ₽</td>
+    </tr>
+    </tbody>
+</table>
+
+<!-- Общая сумма всех заказов -->
+<h2>Общая сумма всех заказов: <span th:text="${totalPrice} + ' ₽'">0.00 ₽</span></h2>
+</body>
+</html>

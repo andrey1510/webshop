@@ -1,8 +1,5 @@
-package com.webshop.controllers;
+package com.webshop.exceptions;
 
-import com.webshop.exceptions.MaxImageSizeExceededException;
-import com.webshop.exceptions.ProductNotFoundException;
-import com.webshop.exceptions.WrongImageTypeException;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
@@ -31,10 +28,16 @@ public class ExceptionsHandler {
     @ExceptionHandler(ProductNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @ResponseBody
-    public ErrorResponse handlePostNotFoundException(ProductNotFoundException ex) {
+    public ErrorResponse handleProductNotFoundException(ProductNotFoundException ex) {
         return new ErrorResponse(ex.getMessage());
     }
 
+    @ExceptionHandler(CustomerOrderNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseBody
+    public ErrorResponse handleCustomerOrderNotFoundException(CustomerOrderNotFoundException ex) {
+        return new ErrorResponse(ex.getMessage());
+    }
 
     @AllArgsConstructor
     @Getter
