@@ -1,9 +1,27 @@
 <!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Заказ</title>
+    <title>Оформленный заказ</title>
 </head>
 <body>
+
+<!-- Переход на другие страницы-->
+<div>
+    <form th:action="@{/web-shop/cart}" method="post" style="float:right;">
+        <button type="submit">Корзина</button>
+    </form>
+</div>
+<div>
+    <form th:action="@{/web-shop/orders}" method="post" style="float:right;">
+        <button type="submit">Оформленные заказы</button>
+    </form>
+</div>
+<div>
+    <form th:action="@{/web-shop/showcase}" method="post" style="float:right;">
+        <button type="submit">Витрина товаров</button>
+    </form>
+</div>
+
 
 <h1>Товары в заказе</h1>
 

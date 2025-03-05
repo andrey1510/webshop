@@ -36,6 +36,25 @@
 </head>
 
 <body>
+
+
+<!-- Переход на другие страницы-->
+<div>
+    <form th:action="@{/web-shop/cart}" method="post" style="float:right;">
+        <button type="submit">Корзина</button>
+    </form>
+</div>
+<div>
+    <form th:action="@{/web-shop/orders}" method="post" style="float:right;">
+        <button type="submit">Оформленные заказы</button>
+    </form>
+</div>
+<div>
+    <form th:action="@{/web-shop/showcase}" method="post" style="float:right;">
+        <button type="submit">Витрина товаров</button>
+    </form>
+</div>
+
 <div class="product-container">
     <!-- Проверка наличия товара -->
     <div th:if="${product != null}">
@@ -61,6 +80,8 @@
                 <input type="hidden" name="quantity" value="1">
                 <button type="submit">Добавить в корзину</button>
             </form>
+
+            <!-- Удаление и изменение количества -->
 
             <div th:if="${cartQuantity > 0}">
                 <form th:action="@{/web-shop/cart/update}" method="post">

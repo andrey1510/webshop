@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -52,6 +53,8 @@ public class ShopController {
 
         Page<Product> products = productService.getProducts(title, minPrice, maxPrice, sort, page, size);
 
+        Map<Integer, Integer> cartProductsQuantities = cartService.getCartProductsQuantity();
+
         model.addAttribute("products", products);
         model.addAttribute("currentPage", page);
         model.addAttribute("pageSize", size);
@@ -60,6 +63,7 @@ public class ShopController {
         model.addAttribute("minPrice", minPrice);
         model.addAttribute("maxPrice", maxPrice);
         model.addAttribute("sort", sort);
+        model.addAttribute("cartProductsQuantities", cartProductsQuantities);
 
         return "showcase";
     }

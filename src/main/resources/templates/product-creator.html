@@ -34,6 +34,14 @@
     </style>
 </head>
 <body>
+
+<!-- Переход на другие страницы-->
+<div>
+    <form th:action="@{/web-shop/showcase}" method="post" style="float:right;">
+        <button type="submit">Перейти в магазин</button>
+    </form>
+</div>
+
 <h1>Создание нового товара</h1>
 <form th:action="@{/product-creator}" method="post" enctype="multipart/form-data">
     <!-- Поле title -->

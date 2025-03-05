@@ -2,10 +2,15 @@ package com.webshop.services;
 
 import com.webshop.entities.CustomerOrder;
 import com.webshop.entities.OrderItem;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
 
 public interface CartService {
 
     CustomerOrder getCurrentCart();
+
+    Map<Integer, Integer> getCartProductsQuantity();
 
     CustomerOrder createNewCart();
 

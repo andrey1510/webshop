@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -28,6 +30,18 @@ public class CartServiceImpl implements CartService{
         return customerOrderRepository.findByStatus(OrderStatus.CART)
             .orElseGet(this::createNewCart);
     }
+
+    @Transactional
+    @Override
+    public Map<Integer, Integer> getCartProductsQuantity() {
+        CustomerOrder cart = getCurrentCart();
+        return cart.getItems().stream()
+            .collect(Collectors.toMap(
+                item -> item.getProduct().getId(),
+                OrderItem::getQuantity
+            ));
+    }
+
 
     @Override
     @Transactional

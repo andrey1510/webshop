@@ -6,6 +6,18 @@
 <body>
 <h1>Корзина</h1>
 
+<!-- Переход на другие страницы-->
+<div>
+    <form th:action="@{/web-shop/orders}" method="post" style="float:right;">
+        <button type="submit">Оформленные заказы</button>
+    </form>
+</div>
+<div>
+    <form th:action="@{/web-shop/showcase}" method="post" style="float:right;">
+        <button type="submit">Витрина товаров</button>
+    </form>
+</div>
+
 <!-- Товары в корзине -->
 
 <table border="1">
@@ -23,9 +35,42 @@
         <td th:text="${item.product.price}">Цена продукта</td>
         <td th:text="${item.quantity}">Количество</td>
         <td th:text="${item.product.price * item.quantity}">Общая цена</td>
+
     </tr>
     </tbody>
 </table>
+
+
+<table style="width:70%; margin: 20px auto;">
+    <tr>
+        <th>Название</th>
+        <th>Цена</th>
+        <th>Количество</th>
+        <th>Изменение / удаление</th>
+    </tr>
+    <tr th:each="item : ${cart.items}">
+        <td th:text="${item.product.title}">Название</td>
+        <td th:text="${item.product.price} + ' ₽'">Цена</td>
+        <td>
+            <form th:action="@{/web-shop/cart/update}" method="post">
+                <input type="hidden" name="productId" th:value="${item.product.id}">
+                <button type="submit" name="quantity" th:value="${item.quantity - 1}"
+                        th:disabled="${item.quantity <= 1}">-</button>
+                <span th:text="${item.quantity}">1</span>
+                <button type="submit" name="quantity" th:value="${item.quantity + 1}">+</button>
+            </form>
+        </td>
+        <td>
+            <form th:action="@{/web-shop/cart/remove}" method="post">
+                <input type="hidden" name="productId" th:value="${item.product.id}">
+                <button type="submit" style="background: #ff4444; color: white; border: none; border-radius: 4px; padding: 5px 10px;">
+                    Удалить &times;
+                </button>
+            </form>
+        </td>
+    </tr>
+</table>
+
 
 <!-- Общая стоимость корзины -->
 

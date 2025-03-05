@@ -1,14 +1,27 @@
 <!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Список заказов</title>
+    <title>Оформленные заказы</title>
 </head>
 <body>
-<h1>Список заказов</h1>
+<h1>Оформленные заказы</h1>
+
+<!-- Переход на другие страницы-->
+<div>
+    <form th:action="@{/web-shop/cart}" method="post" style="float:right;">
+        <button type="submit">Корзина</button>
+    </form>
+</div>
+<div>
+    <form th:action="@{/web-shop/showcase}" method="post" style="float:right;">
+        <button type="submit">Витрина товаров</button>
+    </form>
+</div>
+
 
 <!-- Если нет завершённых заказов -->
 <div th:if="${orders.isEmpty()}">
-    <p>У вас пока нет завершённых заказов.</p>
+    <p>У вас пока нет оформленных заказов.</p>
 </div>
 
 <!-- Список завершённых заказов -->
