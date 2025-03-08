@@ -46,19 +46,19 @@
 
 <!-- Переход на другие страницы-->
 <div>
-    <form th:action="@{/web-shop/cart}" method="post" style="float:right;">
+    <form th:action="@{/cart}" method="get" style="float:right;">
         <button type="submit">Корзина</button>
     </form>
 </div>
 <div>
-    <form th:action="@{/web-shop/orders}" method="post" style="float:right;">
+    <form th:action="@{/orders}" method="get" style="float:right;">
         <button type="submit">Оформленные заказы</button>
     </form>
 </div>
 
 
 <!-- Форма фильтрации -->
-<form th:method="get" th:action="@{/web-shop/products}" class="filters">
+<form th:method="get" th:action="@{/products}" class="filters">
     <label for="title">Название:</label>
     <input type="text" id="title" name="title" th:value="${title}" />
 
@@ -83,7 +83,7 @@
 <div class="product-container">
     <div th:each="product : ${products.content}" class="product-card">
         <h3>
-            <a th:href="@{/web-shop/products/{id}(id=${product.id})}" th:text="${product.title}">Название товара</a>
+            <a th:href="@{/products/{id}(id=${product.id})}" th:text="${product.title}">Название товара</a>
         </h3>
         <p th:text="${product.price} + ' ₽'">Цена товара</p>
         <div th:if="${product.imagePath != null}">
@@ -97,7 +97,7 @@
         <div class="cart-controls">
             <!-- Если товар уже в корзине -->
             <div th:if="${cartProductsQuantities.containsKey(product.id)}">
-                <form th:action="@{/web-shop/cart/update}" method="post">
+                <form th:action="@{/cart/update}" method="post">
                     <input type="hidden" name="productId" th:value="${product.id}">
                     <button type="submit" name="quantity"
                             th:value="${cartProductsQuantities.get(product.id) - 1}"
@@ -110,7 +110,7 @@
                         +
                     </button>
                 </form>
-                <form th:action="@{/web-shop/cart/remove}" method="post">
+                <form th:action="@{/cart/remove}" method="post">
                     <input type="hidden" name="productId" th:value="${product.id}">
                     <button type="submit" style="background: #ff4444; color: white; border: none; border-radius: 4px; padding: 5px 10px;">
                         Удалить &times;
@@ -120,7 +120,7 @@
 
             <!-- Если товара нет в корзине -->
             <div th:unless="${cartProductsQuantities.containsKey(product.id)}">
-                <form th:action="@{/web-shop/cart/add}" method="post">
+                <form th:action="@{/cart/add}" method="post">
                     <input type="hidden" name="productId" th:value="${product.id}">
                     <input type="hidden" name="quantity" value="1">
                     <button type="submit" style="background: #4CAF50; color: white; border: none; border-radius: 4px; padding: 8px 16px;">
@@ -139,10 +139,10 @@
     <nav>
         <ul>
             <li th:if="${currentPage > 0}">
-                <a th:href="@{/web-shop/products(page=${currentPage - 1}, size=${pageSize}, title=${title}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort})}">Предыдущая</a>
+                <a th:href="@{/products(page=${currentPage - 1}, size=${pageSize}, title=${title}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort})}">Предыдущая</a>
             </li>
             <li th:if="${currentPage < totalPages - 1}">
-                <a th:href="@{/web-shop/products(page=${currentPage + 1}, size=${pageSize}, title=${title}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort})}">Следующая</a>
+                <a th:href="@{/products(page=${currentPage + 1}, size=${pageSize}, title=${title}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort})}">Следующая</a>
             </li>
         </ul>
     </nav>

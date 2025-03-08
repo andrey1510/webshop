@@ -22,7 +22,7 @@ import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/web-shop")
+@RequestMapping
 public class ShopController {
 
     private final ProductService productService;
@@ -65,10 +65,10 @@ public class ShopController {
         model.addAttribute("sort", sort);
         model.addAttribute("cartProductsQuantities", cartProductsQuantities);
 
-        return "showcase";
+        return "products";
     }
 
-    @GetMapping
+    @GetMapping("/cart")
     public String getCart(Model model) {
         CustomerOrder cart = cartService.getCurrentCart();
 

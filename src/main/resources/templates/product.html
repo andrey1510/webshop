@@ -40,17 +40,17 @@
 
 <!-- Переход на другие страницы-->
 <div>
-    <form th:action="@{/web-shop/cart}" method="post" style="float:right;">
+    <form th:action="@{/cart}" method="get" style="float:right;">
         <button type="submit">Корзина</button>
     </form>
 </div>
 <div>
-    <form th:action="@{/web-shop/orders}" method="post" style="float:right;">
+    <form th:action="@{/orders}" method="get" style="float:right;">
         <button type="submit">Оформленные заказы</button>
     </form>
 </div>
 <div>
-    <form th:action="@{/web-shop/showcase}" method="post" style="float:right;">
+    <form th:action="@{/products}" method="get" style="float:right;">
         <button type="submit">Витрина товаров</button>
     </form>
 </div>
@@ -75,7 +75,7 @@
         </div>
         <!-- Корзина -->
         <div>
-            <form th:action="@{/web-shop/cart/add}" method="post">
+            <form th:action="@{/cart/add}" method="post">
                 <input type="hidden" name="productId" th:value="${product.id}">
                 <input type="hidden" name="quantity" value="1">
                 <button type="submit">Добавить в корзину</button>
@@ -84,13 +84,13 @@
             <!-- Удаление и изменение количества -->
 
             <div th:if="${cartQuantity > 0}">
-                <form th:action="@{/web-shop/cart/update}" method="post">
+                <form th:action="@{/cart/update}" method="post">
                     <input type="hidden" name="productId" th:value="${product.id}">
                     <button type="submit" name="quantity" value="${cartQuantity - 1}" th:if="${cartQuantity > 1}">-</button>
                     <span th:text="${cartQuantity}">Количество</span>
                     <button type="submit" name="quantity" value="${cartQuantity + 1}">+</button>
                 </form>
-                <form th:action="@{/web-shop/cart/remove}" method="post">
+                <form th:action="@{/cart/remove}" method="post">
                     <input type="hidden" name="productId" th:value="${product.id}">
                     <button type="submit">Удалить из корзины</button>
                 </form>

@@ -9,12 +9,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 @RequiredArgsConstructor
 @AllArgsConstructor
-@Data
+@EqualsAndHashCode(exclude = {"customerOrder"})
+@Getter
+@Setter
 @Entity
 public class OrderItem {
 

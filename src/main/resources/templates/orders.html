@@ -8,12 +8,12 @@
 
 <!-- Переход на другие страницы-->
 <div>
-    <form th:action="@{/web-shop/cart}" method="post" style="float:right;">
+    <form th:action="@{/cart}" method="get" style="float:right;">
         <button type="submit">Корзина</button>
     </form>
 </div>
 <div>
-    <form th:action="@{/web-shop/showcase}" method="post" style="float:right;">
+    <form th:action="@{/products}" method="get" style="float:right;">
         <button type="submit">Витрина товаров</button>
     </form>
 </div>
@@ -36,7 +36,7 @@
     <tbody>
     <tr th:each="order : ${orders}">
         <td>
-            <a th:href="@{/web-shop/orders/{id}(id=${order.id})}" th:text="'Заказ № ' + ${order.id}">Заказ № 1</a>
+            <a th:href="@{/orders/{id}(id=${order.id})}" th:text="'Заказ № ' + ${order.id}">Заказ № 1</a>
         </td>
         <td th:text="${#temporals.format(order.timestamp, 'dd.MM.yyyy HH:mm')}">01.02.2024 15:30</td>
         <td th:text="${order.completedOrderPrice} + ' ₽'">0 ₽</td>

@@ -6,21 +6,26 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jdk.jfr.Timestamp;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.Set;
 
 @RequiredArgsConstructor
 @AllArgsConstructor
-@Data
+@EqualsAndHashCode(exclude = {"items"})
+@Getter
+@Setter
 @Entity
 public class CustomerOrder {
 
@@ -31,7 +36,7 @@ public class CustomerOrder {
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
-    @OneToMany(mappedBy = "customerOrder", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "customerOrder", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<OrderItem> items;
 
     @Timestamp
