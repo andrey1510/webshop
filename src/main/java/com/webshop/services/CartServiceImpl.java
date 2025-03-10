@@ -94,11 +94,13 @@ public class CartServiceImpl implements CartService{
 
         Product product = productService.getProductById(productId);
 
-        OrderItem newItem = new OrderItem();
-        newItem.setCustomerOrder(orderInCart);
-        newItem.setProduct(product);
-        newItem.setQuantity(quantity);
+        OrderItem newItem = OrderItem.builder()
+            .customerOrder(orderInCart)
+            .product(product)
+            .quantity(quantity)
+            .build();
         orderItemRepository.save(newItem);
+
         orderInCart.getItems().add(newItem);
 
         customerOrderRepository.save(orderInCart);

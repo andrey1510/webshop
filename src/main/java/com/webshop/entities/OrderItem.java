@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import lombok.Setter;
 @EqualsAndHashCode(exclude = {"customerOrder"})
 @Getter
 @Setter
+@Builder
 @Entity
 public class OrderItem {
 

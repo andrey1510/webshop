@@ -1,5 +1,6 @@
 package com.webshop.controllers;
 
+import com.webshop.dto.ProductPreviewDto;
 import com.webshop.entities.CustomerOrder;
 import com.webshop.entities.OrderItem;
 import com.webshop.entities.Product;
@@ -51,7 +52,7 @@ public class ProductController {
         @RequestParam(defaultValue = "asc") String sort,
         Model model) {
 
-        Page<Product> products = productService.getProducts(title, minPrice, maxPrice, sort, page, size);
+        Page<ProductPreviewDto> products = productService.getProductPreviewDtos(title, minPrice, maxPrice, sort, page, size);
 
         Map<Integer, Integer> cartProductsQuantities = cartService.getCartProductsQuantity();
 

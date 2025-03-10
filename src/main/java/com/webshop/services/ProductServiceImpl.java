@@ -1,6 +1,7 @@
 package com.webshop.services;
 
 import com.webshop.dto.ProductInputDto;
+import com.webshop.dto.ProductPreviewDto;
 import com.webshop.entities.Product;
 import com.webshop.exceptions.MaxImageSizeExceededException;
 import com.webshop.exceptions.ProductNotFoundException;
@@ -64,7 +65,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Product> getProducts(String title, Double minPrice, Double maxPrice, String sort, int page, int size) {
+    public Page<ProductPreviewDto> getProductPreviewDtos(String title, Double minPrice, Double maxPrice, String sort, int page, int size) {
         Sort.Direction direction = Sort.Direction.ASC;
         String property = "title";
 
@@ -80,15 +81,15 @@ public class ProductServiceImpl implements ProductService {
         Pageable pageable = PageRequest.of(page, size, direction, property);
 
         if (title != null && !title.isEmpty()) {
-            return productRepository.findByTitleContaining(title, pageable);
+            return productRepository.findProductPreviewDtosByTitleContaining(title, pageable);
         } else if (minPrice != null && maxPrice != null) {
-            return productRepository.findByPriceBetween(minPrice, maxPrice, pageable);
+            return productRepository.findProductPreviewDtosByPriceBetween(minPrice, maxPrice, pageable);
         } else if (minPrice != null) {
-            return productRepository.findByPriceGreaterThan(minPrice, pageable);
+            return productRepository.findProductPreviewDtosByPriceGreaterThan(minPrice, pageable);
         } else if (maxPrice != null) {
-            return productRepository.findByPriceLessThan(maxPrice, pageable);
+            return productRepository.findProductPreviewDtosByPriceLessThan(maxPrice, pageable);
         } else {
-            return productRepository.findAll(pageable);
+            return productRepository.findAllProductPreviewDtos(pageable);
         }
     }
 
