@@ -2,7 +2,7 @@
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Создание продукта</title>
+    <title>Создание товара</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -10,6 +10,29 @@
         }
         .form-group {
             margin-bottom: 15px;
+        }
+        .success-message {
+            color: rgb(0, 0, 0);
+            background-color: #d0f6b1;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            position: relative; /
+        }
+
+        .close-button {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #000000;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .close-button:hover {
+            color: #ccc;
         }
         label {
             display: block;
@@ -43,6 +66,13 @@
 </div>
 
 <h1>Создание нового товара</h1>
+
+<!-- Сообщение об успешном создании -->
+<div th:if="${successMessage != null}" class="success-message">
+    <p th:text="${successMessage}">Товар успешно создан.</p>
+    <button class="close-button" onclick="this.parentElement.style.display='none';">&times;</button>
+</div>
+
 <form th:action="@{/product-creator}" method="post" enctype="multipart/form-data">
     <!-- Поле title -->
     <div class="form-group">

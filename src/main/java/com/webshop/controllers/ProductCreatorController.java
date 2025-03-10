@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequiredArgsConstructor
@@ -25,9 +26,12 @@ public class ProductCreatorController {
 
     @PostMapping
     public String createPost(@ModelAttribute ProductInputDto productInputDto,
-                             @RequestParam(value = "image", required = false) MultipartFile image) {
+                             @RequestParam(value = "image", required = false) MultipartFile image,
+                             RedirectAttributes redirectAttributes) {
         productInputDto.setImage(image);
         productService.createProduct(productInputDto);
+
+        redirectAttributes.addFlashAttribute("successMessage", "Товар успешно создан!");
         return "redirect:/product-creator";
     }
 

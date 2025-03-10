@@ -4,6 +4,10 @@ import com.webshop.entities.CustomerOrder;
 import com.webshop.entities.OrderItem;
 import com.webshop.entities.OrderStatus;
 import com.webshop.entities.Product;
+import com.webshop.exceptions.AlreadyInCartException;
+import com.webshop.exceptions.CartIsEmptyException;
+import com.webshop.exceptions.ItemIsNotInCartException;
+import com.webshop.exceptions.WrongQuantityException;
 import com.webshop.repositories.CustomerOrderRepository;
 import com.webshop.repositories.OrderItemRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -34,47 +38,45 @@ public class CartServiceImpl implements CartService{
     @Transactional
     @Override
     public Map<Integer, Integer> getCartProductsQuantity() {
-        CustomerOrder cart = getCurrentCart();
-        return cart.getItems().stream()
+        CustomerOrder orderInCart = getCurrentCart();
+        return orderInCart.getItems().stream()
             .collect(Collectors.toMap(
                 item -> item.getProduct().getId(),
                 OrderItem::getQuantity
             ));
     }
 
-
     @Override
     @Transactional
     public CustomerOrder createNewCart() {
-        CustomerOrder cart = new CustomerOrder();
-        cart.setStatus(OrderStatus.CART);
-        cart.setItems(new HashSet<>());
-        return customerOrderRepository.save(cart);
+        CustomerOrder orderInCart = new CustomerOrder();
+        orderInCart.setStatus(OrderStatus.CART);
+        orderInCart.setItems(new ArrayList<>());
+        return customerOrderRepository.save(orderInCart);
     }
 
     @Transactional
     @Override
     public CustomerOrder completeOrder() {
 
-        CustomerOrder currentCart = getCurrentCart();
+        CustomerOrder orderInCart = getCurrentCart();
 
-        //ToDo
-        if (currentCart.getItems().isEmpty()) throw new IllegalStateException("Корзина пустая.");
+        if (orderInCart.getItems().isEmpty()) throw new CartIsEmptyException("Корзина пустая.");
 
-        currentCart.setStatus(OrderStatus.COMPLETED);
-        currentCart.setTimestamp(LocalDateTime.now());
-        currentCart.setCompletedOrderPrice(calculateTotalPrice(currentCart));
+        orderInCart.setStatus(OrderStatus.COMPLETED);
+        orderInCart.setTimestamp(LocalDateTime.now());
+        orderInCart.setCompletedOrderPrice(calculateTotalPrice(orderInCart));
 
-        customerOrderRepository.save(currentCart);
+        customerOrderRepository.save(orderInCart);
 
         createNewCart();
 
-        return currentCart;
+        return orderInCart;
     }
 
     @Override
-    public Double calculateTotalPrice(CustomerOrder cart) {
-        return cart.getItems().stream()
+    public Double calculateTotalPrice(CustomerOrder orderInCart) {
+        return orderInCart.getItems().stream()
             .mapToDouble(item -> item.getProduct().getPrice() * item.getQuantity())
             .sum();
     }
@@ -82,62 +84,61 @@ public class CartServiceImpl implements CartService{
     @Transactional
     @Override
     public void addItemToCart(Integer productId, Integer quantity) {
-        //ToDo
-        if (quantity <= 0) throw new IllegalArgumentException("Количество должно быть больше 0");
 
-        CustomerOrder cart = getCurrentCart();
+        if (quantity <= 0) throw new WrongThreadException("Количество должно быть больше 0");
 
-        //ToDo
-        if (findCartItemByProductId(cart, productId) != null) throw new IllegalStateException("Товар уже добавлен.");
+        CustomerOrder orderInCart = getCurrentCart();
+
+        if (findCartItemByProductId(orderInCart, productId) != null)
+            throw new AlreadyInCartException("Товар уже добавлен в корзину.");
 
         Product product = productService.getProductById(productId);
 
         OrderItem newItem = new OrderItem();
-        newItem.setCustomerOrder(cart);
+        newItem.setCustomerOrder(orderInCart);
         newItem.setProduct(product);
         newItem.setQuantity(quantity);
         orderItemRepository.save(newItem);
-        cart.getItems().add(newItem);
+        orderInCart.getItems().add(newItem);
 
-        customerOrderRepository.save(cart);
+        customerOrderRepository.save(orderInCart);
     }
 
     @Transactional
     @Override
     public void updateItemQuantity(Integer productId, Integer quantity) {
-        //ToDo
-        if (quantity <= 0) throw new IllegalArgumentException("Количество должно быть больше 0");
 
-        CustomerOrder cart = getCurrentCart();
+        if (quantity <= 0) throw new WrongQuantityException("Количество должно быть больше 0");
 
-        OrderItem existingItem = findCartItemByProductId(cart, productId);
+        CustomerOrder orderInCart = getCurrentCart();
 
-        //ToDo
-        if (existingItem == null) throw new IllegalStateException("Товар не найден в корзине.");
+        OrderItem existingItem = findCartItemByProductId(orderInCart, productId);
+
+        if (existingItem == null) throw new ItemIsNotInCartException("Товар не найден в корзине.");
 
         existingItem.setQuantity(quantity);
-        customerOrderRepository.save(cart);
+        customerOrderRepository.save(orderInCart);
     }
 
     @Transactional
     @Override
     public void removeCartItem(Integer productId) {
-        CustomerOrder cart = getCurrentCart();
+        CustomerOrder orderInCart = getCurrentCart();
 
-        OrderItem existingItem = findCartItemByProductId(cart, productId);
+        OrderItem existingItem = findCartItemByProductId(orderInCart, productId);
 
         if (existingItem != null) {
-            cart.getItems().remove(existingItem);
+            orderInCart.getItems().remove(existingItem);
             orderItemRepository.delete(existingItem);
         }
 
-        customerOrderRepository.save(cart);
+        customerOrderRepository.save(orderInCart);
     }
 
     @Transactional
     @Override
-    public OrderItem findCartItemByProductId(CustomerOrder cart, Integer productId) {
-        return cart.getItems().stream()
+    public OrderItem findCartItemByProductId(CustomerOrder orderInCart, Integer productId) {
+        return orderInCart.getItems().stream()
             .filter(item -> item.getProduct().getId().equals(productId))
             .findFirst()
             .orElse(null);

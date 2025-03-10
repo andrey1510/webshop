@@ -15,11 +15,7 @@ spring:
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
         format_sql: true
-        naming:
-          physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
-          implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
   h2:
     console:
       enabled: true
@@ -33,7 +29,6 @@ spring:
     multipart:
       max-file-size: 3MB
       max-request-size: 10MB
-
 
 images:
   upload-directory: "/uploads/"

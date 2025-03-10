@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface CustomerOrderService {
 
-    CustomerOrder getOrderById(Integer orderId);
+    CustomerOrder getCompletedOrderById(Integer orderId);
 
     List<CustomerOrder> getCompletedOrders();
 

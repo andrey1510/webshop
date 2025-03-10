@@ -32,12 +32,41 @@ public class ExceptionsHandler {
         return new ErrorResponse(ex.getMessage());
     }
 
-    @ExceptionHandler(CustomerOrderNotFoundException.class)
+    @ExceptionHandler(CompletedCustomerOrderNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @ResponseBody
-    public ErrorResponse handleCustomerOrderNotFoundException(CustomerOrderNotFoundException ex) {
+    public ErrorResponse handleCustomerOrderNotFoundException(CompletedCustomerOrderNotFoundException ex) {
         return new ErrorResponse(ex.getMessage());
     }
+
+    @ExceptionHandler(ItemIsNotInCartException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseBody
+    public ErrorResponse handleItemIsNotInCartException(ItemIsNotInCartException ex) {
+        return new ErrorResponse(ex.getMessage());
+    }
+
+    @ExceptionHandler(AlreadyInCartException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseBody
+    public ErrorResponse handleAlreadyInCartException(AlreadyInCartException ex) {
+        return new ErrorResponse(ex.getMessage());
+    }
+
+    @ExceptionHandler(WrongQuantityException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseBody
+    public ErrorResponse handleWrongQuantityException(WrongQuantityException ex) {
+        return new ErrorResponse(ex.getMessage());
+    }
+
+    @ExceptionHandler(CartIsEmptyException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseBody
+    public ErrorResponse handleCartIsEmptyException(CartIsEmptyException ex) {
+        return new ErrorResponse(ex.getMessage());
+    }
+
 
     @AllArgsConstructor
     @Getter

@@ -2,7 +2,7 @@ package com.webshop.services;
 
 import com.webshop.entities.CustomerOrder;
 import com.webshop.entities.OrderStatus;
-import com.webshop.exceptions.CustomerOrderNotFoundException;
+import com.webshop.exceptions.CompletedCustomerOrderNotFoundException;
 import com.webshop.repositories.CustomerOrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,9 +18,14 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
 
     @Transactional
     @Override
-    public CustomerOrder getOrderById(Integer orderId) {
-        return customerOrderRepository.findById(orderId)
-            .orElseThrow(() -> new CustomerOrderNotFoundException("Заказ не найден"));
+    public CustomerOrder getCompletedOrderById(Integer orderId) {
+        CustomerOrder completedOrder = customerOrderRepository.findById(orderId)
+            .orElseThrow(() -> new CompletedCustomerOrderNotFoundException("Заказ не найден"));
+
+        if (completedOrder.getStatus() != OrderStatus.COMPLETED)
+            throw new CompletedCustomerOrderNotFoundException("Заказ не найден");
+
+        return completedOrder;
     }
 
     @Transactional

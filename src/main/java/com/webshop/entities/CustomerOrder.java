@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.Set;
+import java.util.List;
 
 @RequiredArgsConstructor
 @AllArgsConstructor
@@ -37,7 +37,7 @@ public class CustomerOrder {
     private OrderStatus status;
 
     @OneToMany(mappedBy = "customerOrder", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private Set<OrderItem> items;
+    private List<OrderItem> items;
 
     @Timestamp
     private LocalDateTime timestamp;

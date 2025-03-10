@@ -59,7 +59,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public Product getProductById(Integer id) {
-        return productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException("Продукт не найден"));
+        return productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException("Товар не найден"));
     }
 
     @Override

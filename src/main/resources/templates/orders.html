@@ -2,22 +2,78 @@
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Оформленные заказы</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding-right: 180px;
+        }
+        .button-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .button-container button {
+            width: 150px;
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .button-container button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        table, th, td {
+            border: none;
+        }
+
+        a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
 <h1>Оформленные заказы</h1>
 
 <!-- Переход на другие страницы-->
-<div>
-    <form th:action="@{/cart}" method="get" style="float:right;">
+<div class="button-container">
+    <form th:action="@{/cart}" method="get">
         <button type="submit">Корзина</button>
     </form>
-</div>
-<div>
-    <form th:action="@{/products}" method="get" style="float:right;">
+    <form th:action="@{/products}" method="get">
         <button type="submit">Витрина товаров</button>
     </form>
 </div>
-
 
 <!-- Если нет завершённых заказов -->
 <div th:if="${orders.isEmpty()}">
