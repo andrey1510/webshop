@@ -25,7 +25,7 @@ public class ProductCreatorController {
     }
 
     @PostMapping
-    public String createPost(@ModelAttribute ProductInputDto productInputDto,
+    public String createProduct(@ModelAttribute ProductInputDto productInputDto,
                              @RequestParam(value = "image", required = false) MultipartFile image,
                              RedirectAttributes redirectAttributes) {
         productInputDto.setImage(image);

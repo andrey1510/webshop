@@ -18,7 +18,7 @@ public class ImageUtilsTest {
     @BeforeEach
     @SneakyThrows
     public void setUp() {
-        Path tempDir = Paths.get("target/temp-test-files");
+        Path tempDir = Paths.get("build/tmp/temp-test-files");
         Files.createDirectories(tempDir);
         oldFilePath = Files.createTempFile(tempDir, "test", ".jpg");
     }

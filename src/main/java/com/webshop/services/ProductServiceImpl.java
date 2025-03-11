@@ -65,7 +65,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ProductPreviewDto> getProductPreviewDtos(String title, Double minPrice, Double maxPrice, String sort, int page, int size) {
+    public Page<ProductPreviewDto> getProductPreviewDtos(
+        String title, Double minPrice, Double maxPrice, String sort, int page, int size) {
+
         Sort.Direction direction = Sort.Direction.ASC;
         String property = "title";
 
@@ -104,7 +106,14 @@ public class ProductServiceImpl implements ProductService {
 
     private void saveImage(MultipartFile file, String relativePath) {
         try {
-            Path fullPath = Paths.get(System.getProperty("catalina.base") + uploadDirectory, relativePath);
+            String baseDir = System.getProperty("catalina.base");
+            if (baseDir == null) baseDir = "build/tmp";
+
+            if (uploadDirectory == null) {
+                throw new IllegalStateException("Свойство images.upload-directory не задано в конфигурации.");
+            }
+
+            Path fullPath = Paths.get(baseDir, uploadDirectory, relativePath);
             Files.createDirectories(fullPath.getParent());
             file.transferTo(fullPath);
         } catch (IOException e) {

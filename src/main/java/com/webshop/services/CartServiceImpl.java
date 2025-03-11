@@ -85,7 +85,7 @@ public class CartServiceImpl implements CartService{
     @Override
     public void addItemToCart(Integer productId, Integer quantity) {
 
-        if (quantity <= 0) throw new WrongThreadException("Количество должно быть больше 0");
+        if (quantity <= 0) throw new WrongQuantityException("Количество должно быть больше 0");
 
         CustomerOrder orderInCart = getCurrentCart();
 

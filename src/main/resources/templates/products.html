@@ -176,8 +176,8 @@
 <div>
     <label>Товаров на странице:</label>
     <div>
-        <button onclick="changePageSize(2)" th:class="${pageSize == 2 ? 'active' : ''}">2</button>
-        <button onclick="changePageSize(3)" th:class="${pageSize == 4 ? 'active' : ''}">4</button>
+        <button onclick="changePageSize(10)" th:class="${pageSize == 10 ? 'active' : ''}">10</button>
+        <button onclick="changePageSize(20)" th:class="${pageSize == 20 ? 'active' : ''}">20</button>
         <button onclick="changePageSize(50)" th:class="${pageSize == 50 ? 'active' : ''}">50</button>
         <button onclick="changePageSize(100)" th:class="${pageSize == 100 ? 'active' : ''}">100</button>
     </div>

@@ -2,7 +2,6 @@ package com.webshop.services;
 
 import com.webshop.entities.CustomerOrder;
 import com.webshop.entities.OrderItem;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 
