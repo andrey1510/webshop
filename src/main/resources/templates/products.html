@@ -64,14 +64,15 @@
     </style>
     <script th:inline="javascript">
         function changePageSize(size) {
-            let url = '?page=0&size=' + size;
-            window.location.href = url;
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.set('size', size);
+            urlParams.set('page', 0);
+            window.location.href = window.location.pathname + '?' + urlParams.toString();
         }
     </script>
 </head>
 <body>
 <h1>Витрина товаров</h1>
-
 
 <!-- Переход на другие страницы-->
 <div class="button-container">
@@ -85,6 +86,10 @@
 
 <!-- Форма фильтрации -->
 <form th:method="get" th:action="@{/products}" class="filters">
+    <!-- Скрытые поля для пагинации -->
+    <input type="hidden" name="page" th:value="${currentPage}" />
+    <input type="hidden" name="size" th:value="${pageSize}" />
+
     <label for="title">Название:</label>
     <input type="text" id="title" name="title" th:value="${title}" />
 
@@ -155,7 +160,6 @@
                 </form>
             </div>
         </div>
-
     </div>
 </div>
 
