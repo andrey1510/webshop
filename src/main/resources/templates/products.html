@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Витрина товаров</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .product-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            padding-right: 180px;
+        }
+
+        .product-card {
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .pagination button {
+            margin: 0 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .filters {
+            margin-bottom: 20px;
+            padding-right: 180px;
+        }
+        .button-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .button-container button {
+            width: 150px;
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .button-container button:hover {
+            background-color: #45a049;
+        }
+        a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+    </style>
+    <script th:inline="javascript">
+        function changePageSize(size) {
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.set('size', size);
+            urlParams.set('page', 0);
+            window.location.href = window.location.pathname + '?' + urlParams.toString();
+        }
+    </script>
+</head>
+<body>
+<h1>Витрина товаров</h1>
+
+<!-- Переход на другие страницы-->
+<div class="button-container">
+    <form th:action="@{/cart}" method="get">
+        <button type="submit">Корзина</button>
+    </form>
+    <form th:action="@{/orders}" method="get">
+        <button type="submit">Оформленные заказы</button>
+    </form>
+</div>
+
+<!-- Форма фильтрации -->
+<form th:method="get" th:action="@{/products}" class="filters">
+    <!-- Скрытые поля для пагинации -->
+    <input type="hidden" name="page" th:value="${currentPage}" />
+    <input type="hidden" name="size" th:value="${pageSize}" />
+
+    <label for="title">Название:</label>
+    <input type="text" id="title" name="title" th:value="${title}" />
+
+    <label for="minPrice">Цена от:</label>
+    <input type="number" id="minPrice" name="minPrice" th:value="${minPrice}" step="0.01" />
+
+    <label for="maxPrice">до:</label>
+    <input type="number" id="maxPrice" name="maxPrice" th:value="${maxPrice}" step="0.01" />
+
+    <label for="sort">Сортировка:</label>
+    <select id="sort" name="sort">
+        <option value="title-asc" th:selected="${sort} == 'title-asc'">По алфавиту (возрастание)</option>
+        <option value="title-desc" th:selected="${sort} == 'title-desc'">По алфавиту (убывание)</option>
+        <option value="price-asc" th:selected="${sort} == 'price-asc'">По цене (возрастание)</option>
+        <option value="price-desc" th:selected="${sort} == 'price-desc'">По цене (убывание)</option>
+    </select>
+
+    <button type="submit">Применить фильтры</button>
+</form>
+
+<!-- Список товаров -->
+<div class="product-container">
+    <div th:each="product : ${products.content}" class="product-card">
+        <h3>
+            <a th:href="@{/products/{id}(id=${product.id})}" th:text="${product.title}">Название товара</a>
+        </h3>
+        <p th:text="${product.price} + ' ₽'">Цена товара</p>
+        <div th:if="${product.imagePath != null}">
+            <img th:src="@{'/uploads/' + ${product.imagePath}}" alt="Изображение" style="max-width: 100%; height: auto; max-height: 200px;">
+        </div>
+        <div th:if="${product.imagePath == null}">
+            <p>  </p>
+        </div>
+
+        <!-- Управление корзиной -->
+        <div class="cart-controls">
+            <!-- Если товар уже в корзине -->
+            <div th:if="${cartProductsQuantities.containsKey(product.id)}">
+                <form th:action="@{/cart/update}" method="post">
+                    <input type="hidden" name="productId" th:value="${product.id}">
+                    <button type="submit" name="quantity"
+                            th:value="${cartProductsQuantities.get(product.id) - 1}"
+                            th:disabled="${cartProductsQuantities.get(product.id) <= 1}">
+                        -
+                    </button>
+                    <span th:text="${cartProductsQuantities.get(product.id)}">1</span>
+                    <button type="submit" name="quantity"
+                            th:value="${cartProductsQuantities.get(product.id) + 1}">
+                        +
+                    </button>
+                </form>
+                <form th:action="@{/cart/remove}" method="post">
+                    <input type="hidden" name="productId" th:value="${product.id}">
+                    <button type="submit" style="background: #ff4444; color: white; border: none; border-radius: 4px; padding: 5px 10px;">
+                        Удалить &times;
+                    </button>
+                </form>
+            </div>
+
+            <!-- Если товара нет в корзине -->
+            <div th:unless="${cartProductsQuantities.containsKey(product.id)}">
+                <form th:action="@{/cart/add}" method="post">
+                    <input type="hidden" name="productId" th:value="${product.id}">
+                    <input type="hidden" name="quantity" value="1">
+                    <button type="submit" style="background: #4CAF50; color: white; border: none; border-radius: 4px; padding: 8px 16px;">
+                        Добавить в корзину
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Пагинация -->
+<div>
+    <span th:text="'Страница ' + (${currentPage + 1}) + ' из ' + ${totalPages}"></span>
+    <nav>
+        <ul>
+            <li th:if="${currentPage > 0}">
+                <a th:href="@{/products(page=${currentPage - 1}, size=${pageSize}, title=${title}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort})}">Предыдущая</a>
+            </li>
+            <li th:if="${currentPage < totalPages - 1}">
+                <a th:href="@{/products(page=${currentPage + 1}, size=${pageSize}, title=${title}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort})}">Следующая</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+<div>
+    <label>Товаров на странице:</label>
+    <div>
+        <button onclick="changePageSize(10)" th:class="${pageSize == 10 ? 'active' : ''}">10</button>
+        <button onclick="changePageSize(20)" th:class="${pageSize == 20 ? 'active' : ''}">20</button>
+        <button onclick="changePageSize(50)" th:class="${pageSize == 50 ? 'active' : ''}">50</button>
+        <button onclick="changePageSize(100)" th:class="${pageSize == 100 ? 'active' : ''}">100</button>
+    </div>
+</div>
+
+</body>
+</html>
