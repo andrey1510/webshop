@@ -4,7 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.codec.multipart.FilePart;
+
 
 @RequiredArgsConstructor
 @AllArgsConstructor
@@ -15,6 +16,6 @@ public class ProductInputDto {
     private String title;
     private String description;
     private Double price;
-    private MultipartFile image;
+    private FilePart image;
 
 }

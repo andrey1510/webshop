@@ -1,42 +1,36 @@
 package com.webshop.entities;
 
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 @RequiredArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"customerOrder"})
+@EqualsAndHashCode(exclude = {"customerOrder", "product"})
 @Getter
 @Setter
 @Builder
-@Entity
 public class OrderItem {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne
-    @JoinColumn(name = "customer_order_id", nullable = false)
-    private CustomerOrder customerOrder;
+    private Integer customerOrderId;
 
-    @ManyToOne
-    @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
+    private Integer productId;
 
-    @Column(nullable = false)
     private Integer quantity;
 
+    @Transient
+    private CustomerOrder customerOrder;
+
+    @Transient
+    private Product product;
 }

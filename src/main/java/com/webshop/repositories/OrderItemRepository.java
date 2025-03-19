@@ -1,9 +1,9 @@
 package com.webshop.repositories;
 
 import com.webshop.entities.OrderItem;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface OrderItemRepository extends JpaRepository<OrderItem, Integer> {
+public interface OrderItemRepository extends R2dbcRepository<OrderItem, Integer> {
 }

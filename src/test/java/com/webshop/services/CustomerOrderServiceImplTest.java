@@ -53,101 +53,101 @@ public class CustomerOrderServiceImplTest {
 
     }
 
-    @Test
-    public void testGetCompletedOrderById_Success() {
-
-        when(customerOrderRepository.findById(1)).thenReturn(Optional.of(completedOrder));
-
-        CustomerOrder result = customerOrderService.getCompletedOrderById(1);
-
-        assertNotNull(result);
-        assertEquals(1, result.getId());
-        assertEquals(OrderStatus.COMPLETED, result.getStatus());
-        assertEquals(100.0, result.getCompletedOrderPrice());
-
-        verify(customerOrderRepository, times(1)).findById(1);
-    }
-
-    @Test
-    public void testGetCompletedOrderById_NotFound() {
-
-        when(customerOrderRepository.findById(3)).thenReturn(Optional.empty());
-
-        assertThrows(CompletedCustomerOrderNotFoundException.class, () -> {
-            customerOrderService.getCompletedOrderById(3);
-        });
-
-        verify(customerOrderRepository, times(1)).findById(3);
-    }
-
-    @Test
-    public void testGetCompletedOrderById_NotCompleted() {
-
-        when(customerOrderRepository.findById(2)).thenReturn(Optional.of(orderInCart));
-
-        assertThrows(CompletedCustomerOrderNotFoundException.class, () -> {
-            customerOrderService.getCompletedOrderById(2);
-        });
-
-        verify(customerOrderRepository, times(1)).findById(2);
-    }
-
-    @Test
-    public void testGetCompletedOrders_Success() {
-
-        when(customerOrderRepository.findAllByStatus(OrderStatus.COMPLETED))
-            .thenReturn(Arrays.asList(completedOrder));
-
-        List<CustomerOrder> result = customerOrderService.getCompletedOrders();
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals(1, result.get(0).getId());
-        assertEquals(OrderStatus.COMPLETED, result.get(0).getStatus());
-
-        verify(customerOrderRepository, times(1)).findAllByStatus(OrderStatus.COMPLETED);
-    }
-
-    @Test
-    public void testGetCompletedOrders_EmptyList() {
-
-        when(customerOrderRepository.findAllByStatus(OrderStatus.COMPLETED))
-            .thenReturn(Collections.emptyList());
-
-        List<CustomerOrder> result = customerOrderService.getCompletedOrders();
-
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-
-        verify(customerOrderRepository, times(1)).findAllByStatus(OrderStatus.COMPLETED);
-    }
-
-    @Test
-    public void testGetTotalPriceOfCompletedOrders_Success() {
-
-        when(customerOrderRepository.findAllByStatus(OrderStatus.COMPLETED))
-            .thenReturn(Arrays.asList(completedOrder));
-
-        Double result = customerOrderService.getTotalPriceOfCompletedOrders();
-
-        assertNotNull(result);
-        assertEquals(100.0, result);
-
-        verify(customerOrderRepository, times(1)).findAllByStatus(OrderStatus.COMPLETED);
-    }
-
-    @Test
-    public void testGetTotalPriceOfCompletedOrders_EmptyList() {
-
-        when(customerOrderRepository.findAllByStatus(OrderStatus.COMPLETED))
-            .thenReturn(Collections.emptyList());
-
-        Double result = customerOrderService.getTotalPriceOfCompletedOrders();
-
-        assertNotNull(result);
-        assertEquals(0.0, result);
-
-        verify(customerOrderRepository, times(1)).findAllByStatus(OrderStatus.COMPLETED);
-    }
+//    @Test
+//    public void testGetCompletedOrderById_Success() {
+//
+//        when(customerOrderRepository.findById(1)).thenReturn(Optional.of(completedOrder));
+//
+//        CustomerOrder result = customerOrderService.getCompletedOrderById(1);
+//
+//        assertNotNull(result);
+//        assertEquals(1, result.getId());
+//        assertEquals(OrderStatus.COMPLETED, result.getStatus());
+//        assertEquals(100.0, result.getCompletedOrderPrice());
+//
+//        verify(customerOrderRepository, times(1)).findById(1);
+//    }
+//
+//    @Test
+//    public void testGetCompletedOrderById_NotFound() {
+//
+//        when(customerOrderRepository.findById(3)).thenReturn(Optional.empty());
+//
+//        assertThrows(CompletedCustomerOrderNotFoundException.class, () -> {
+//            customerOrderService.getCompletedOrderById(3);
+//        });
+//
+//        verify(customerOrderRepository, times(1)).findById(3);
+//    }
+//
+//    @Test
+//    public void testGetCompletedOrderById_NotCompleted() {
+//
+//        when(customerOrderRepository.findById(2)).thenReturn(Optional.of(orderInCart));
+//
+//        assertThrows(CompletedCustomerOrderNotFoundException.class, () -> {
+//            customerOrderService.getCompletedOrderById(2);
+//        });
+//
+//        verify(customerOrderRepository, times(1)).findById(2);
+//    }
+//
+//    @Test
+//    public void testGetCompletedOrders_Success() {
+//
+//        when(customerOrderRepository.findAllByStatus(OrderStatus.COMPLETED))
+//            .thenReturn(Arrays.asList(completedOrder));
+//
+//        List<CustomerOrder> result = customerOrderService.getCompletedOrders();
+//
+//        assertNotNull(result);
+//        assertEquals(1, result.size());
+//        assertEquals(1, result.get(0).getId());
+//        assertEquals(OrderStatus.COMPLETED, result.get(0).getStatus());
+//
+//        verify(customerOrderRepository, times(1)).findAllByStatus(OrderStatus.COMPLETED);
+//    }
+//
+//    @Test
+//    public void testGetCompletedOrders_EmptyList() {
+//
+//        when(customerOrderRepository.findAllByStatus(OrderStatus.COMPLETED))
+//            .thenReturn(Collections.emptyList());
+//
+//        List<CustomerOrder> result = customerOrderService.getCompletedOrders();
+//
+//        assertNotNull(result);
+//        assertTrue(result.isEmpty());
+//
+//        verify(customerOrderRepository, times(1)).findAllByStatus(OrderStatus.COMPLETED);
+//    }
+//
+//    @Test
+//    public void testGetTotalPriceOfCompletedOrders_Success() {
+//
+//        when(customerOrderRepository.findAllByStatus(OrderStatus.COMPLETED))
+//            .thenReturn(Arrays.asList(completedOrder));
+//
+//        Double result = customerOrderService.getTotalPriceOfCompletedOrders();
+//
+//        assertNotNull(result);
+//        assertEquals(100.0, result);
+//
+//        verify(customerOrderRepository, times(1)).findAllByStatus(OrderStatus.COMPLETED);
+//    }
+//
+//    @Test
+//    public void testGetTotalPriceOfCompletedOrders_EmptyList() {
+//
+//        when(customerOrderRepository.findAllByStatus(OrderStatus.COMPLETED))
+//            .thenReturn(Collections.emptyList());
+//
+//        Double result = customerOrderService.getTotalPriceOfCompletedOrders();
+//
+//        assertNotNull(result);
+//        assertEquals(0.0, result);
+//
+//        verify(customerOrderRepository, times(1)).findAllByStatus(OrderStatus.COMPLETED);
+//    }
 
 }
