@@ -11,7 +11,6 @@ import com.webshop.repositories.ProductRepository;
 import com.webshop.utils.ImageUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -37,29 +36,6 @@ public class ProductServiceImpl implements ProductService {
     private final ProductPreviewDtoRepository productPreviewDtoRepository;
     private final ProductRepository productRepository;
 
-    @Override
-    @Transactional
-    public Mono<Product> createProduct(ProductInputDto productInputDto){
-
-        String uniqueFileName = null;
-        FilePart image = productInputDto.getImage();
-        if (image != null) {
-            validateImage(image);
-            uniqueFileName = ImageUtils.generateUniqueImageName(image.filename());
-            saveImage(image, uniqueFileName);
-        }
-
-        Product product = Product.builder()
-            .title(productInputDto.getTitle())
-            .description(productInputDto.getDescription())
-            .price(productInputDto.getPrice())
-            .imagePath(uniqueFileName)
-            .build();
-
-        productRepository.save(product);
-
-        return product;
-    }
 
     @Override
     public Mono<Product> getProductById(Integer id) {
@@ -98,6 +74,34 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
+
+    @Override
+    @Transactional
+    public Mono<Product> createProduct(ProductInputDto productInputDto){
+        return Mono.justOrEmpty(productInputDto.getImage())
+            .flatMap(this::processImage)
+            .defaultIfEmpty(null)
+            .flatMap(uniqueFileName -> saveProduct(productInputDto, uniqueFileName));
+    }
+
+    private Mono<Product> saveProduct(ProductInputDto productInputDto, String imagePath) {
+        Product product = Product.builder()
+            .title(productInputDto.getTitle())
+            .description(productInputDto.getDescription())
+            .price(productInputDto.getPrice())
+            .imagePath(imagePath)
+            .build();
+        return productRepository.save(product);
+    }
+
+    private Mono<String> processImage(FilePart image) {
+        validateImage(image);
+        String uniqueFileName = ImageUtils.generateUniqueImageName(image.filename());
+        return saveImage(image, uniqueFileName).then(Mono.just(uniqueFileName));
+    }
+
+
+
     private void validateImage(FilePart file) {
         if (!ImageUtils.isValidImageExtension(file.filename())) {
             throw new WrongImageTypeException("Недопустимый формат изображения, разрешены: jpeg, jpg, png.");
@@ -107,21 +111,14 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
-    private void saveImage(FilePart file, String relativePath) {
-        try {
-            String baseDir = System.getProperty("catalina.base");
-            if (baseDir == null) baseDir = "build/tmp";
-
-            if (uploadDirectory == null) {
-                throw new IllegalStateException("Свойство images.upload-directory не задано в конфигурации.");
-            }
-
-            Path fullPath = Paths.get(baseDir, uploadDirectory, relativePath);
-            Files.createDirectories(fullPath.getParent());
-            file.transferTo(fullPath);
-        } catch (IOException e) {
-            throw new RuntimeException("Ошибка при сохранении файла: " + relativePath, e);
-        }
+    private Mono<Void> saveImage(FilePart file, String relativePath) {
+        Path fullPath = Paths.get(uploadDirectory, relativePath);
+        return Mono.fromCallable(() -> {
+                Files.createDirectories(fullPath.getParent());
+                return fullPath;
+            })
+            .flatMap(file::transferTo)
+            .onErrorMap(IOException.class, e -> new RuntimeException("Ошибка при сохранении файла: " + relativePath, e));
     }
 
 }
