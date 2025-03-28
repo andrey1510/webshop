@@ -4,6 +4,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    environment:
+      SPRING_R2DBC_URL: r2dbc:h2:mem:///testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+      SPRING_DATASOURCE_URL: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+      SPRING_R2DBC_USERNAME: sa
+      SPRING_DATASOURCE_USERNAME: sa
     ports:
-      - 8888:8888
+      - "8888:8888"
     restart: unless-stopped

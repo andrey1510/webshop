@@ -12,11 +12,12 @@ import com.webshop.repositories.CustomerOrderRepository;
 import com.webshop.repositories.OrderItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -36,21 +37,25 @@ public class CartServiceImpl implements CartService{
             .switchIfEmpty(createNewCart());
     }
 
-    @Override
     public Mono<Map<Integer, Integer>> getCartProductsQuantity() {
         return getCurrentCart()
-            .flatMapMany(order -> Flux.fromIterable(order.getItems()))
-            .collect(Collectors.toMap(
+            .flatMapMany(order -> {
+                List<OrderItem> items = order.getItems();
+                return items != null ? Flux.fromIterable(items) : Flux.empty();
+            })
+            .filter(item -> item.getProduct() != null && item.getProduct().getId() != null)
+            .collectMap(
                 item -> item.getProduct().getId(),
                 OrderItem::getQuantity
-            ));
+            )
+            .defaultIfEmpty(Collections.emptyMap());
     }
 
     @Override
     public Mono<CustomerOrder> createNewCart() {
         CustomerOrder orderInCart = new CustomerOrder();
         orderInCart.setStatus(OrderStatus.CART);
-        orderInCart.setItems(List.of());
+        orderInCart.setItems(new ArrayList<>());
         return customerOrderRepository.save(orderInCart);
     }
 
@@ -74,7 +79,6 @@ public class CartServiceImpl implements CartService{
             });
     }
 
-    @Transactional
     @Override
     public Mono<Void> addItemToCart(Integer productId, Integer quantity) {
         if (quantity <= 0) {
@@ -112,7 +116,6 @@ public class CartServiceImpl implements CartService{
             .then();
     }
 
-    @Transactional
     @Override
     public Mono<Void> updateItemQuantity(Integer productId, Integer quantity) {
 

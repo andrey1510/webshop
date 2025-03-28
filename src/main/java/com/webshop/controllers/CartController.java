@@ -1,22 +1,29 @@
 package com.webshop.controllers;
 
 import com.webshop.entities.CustomerOrder;
+import com.webshop.entities.OrderItem;
+import com.webshop.exceptions.AlreadyInCartException;
 import com.webshop.exceptions.CartIsEmptyException;
-import com.webshop.exceptions.CompletedCustomerOrderNotFoundException;
 import com.webshop.services.CartService;
-import jakarta.servlet.http.HttpServletRequest;
+import com.webshop.services.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import org.springframework.web.reactive.result.view.RedirectView;
+import org.springframework.web.bind.annotation.RequestHeader;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
@@ -24,51 +31,107 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class CartController {
 
     private final CartService cartService;
+    private final ProductService productService;
 
     @GetMapping
-    public String getCart(Model model) {
-        CustomerOrder orderInCart = cartService.getCurrentCart();
+    public Mono<String> getCart(ServerWebExchange exchange) {
+        Mono<CustomerOrder> cartMono = cartService.getCurrentCart()
+            .doOnNext(order -> {
+                if (order.getItems() == null) {
+                    order.setItems(new ArrayList<>());
+                }
+            });
 
-        Double totalPrice = cartService.calculateTotalPrice(orderInCart);
+        Mono<Double> totalPriceMono = cartMono.flatMap(order -> {
+            List<OrderItem> items = order.getItems() != null ? order.getItems() : Collections.emptyList();
+            return Flux.fromIterable(items)
+                .flatMap(item -> productService.getProductById(item.getProductId())
+                    .map(product -> product.getPrice() * item.getQuantity()))
+                .reduce(0.0, Double::sum);
+        });
 
-        model.addAttribute("cart", orderInCart);
-        model.addAttribute("totalPrice", totalPrice);
+        return cartMono.zipWith(totalPriceMono)
+            .flatMap(tuple -> {
+                CustomerOrder order = tuple.getT1();
+                Double totalPrice = tuple.getT2();
 
-        return "cart";
+                exchange.getAttributes().put("cart", order);
+                exchange.getAttributes().put("totalPrice", totalPrice);
+
+                return Mono.just("cart");
+            });
     }
 
     @PostMapping("/add")
-    public String addCartItem(@RequestParam("productId") Integer productId,
-                              @RequestParam("quantity") Integer quantity,
-                              HttpServletRequest request) {
-        cartService.addItemToCart(productId, quantity);
-        return "redirect:" + request.getHeader("Referer");
+    public Mono<RedirectView> addCartItem(
+        @RequestParam("productId") Integer productId,
+        @RequestParam("quantity") Integer quantity,
+        @RequestHeader("Referer") String referer,
+        ServerWebExchange exchange) {
+
+        Mono<RedirectView> successRedirect = Mono.fromCallable(() -> {
+            RedirectView redirectView = new RedirectView(referer);
+            redirectView.setStatusCode(HttpStatus.FOUND);
+            return redirectView;
+        });
+
+        Mono<RedirectView> errorRedirect = exchange.getSession()
+            .doOnNext(session -> session.getAttributes().put("errorMessage", "Товар уже в корзине"))
+            .then(successRedirect);
+
+        return cartService.addItemToCart(productId, quantity).then(successRedirect)
+            .onErrorResume(AlreadyInCartException.class, e -> errorRedirect);
     }
 
     @PostMapping("/update")
-    public String updateCartItem(@RequestParam("productId") Integer productId,
-                                 @RequestParam("quantity") Integer quantity,
-                                 HttpServletRequest request) {
-        cartService.updateItemQuantity(productId, quantity);
-        return "redirect:" + request.getHeader("Referer");
+    public Mono<RedirectView> updateCartItem(
+        @RequestParam("productId") Integer productId,
+        @RequestParam("quantity") Integer quantity,
+        @RequestHeader("Referer") String referer) {
+        return cartService.updateItemQuantity(productId, quantity).then(Mono.fromCallable(() -> {
+            RedirectView redirectView = new RedirectView(referer);
+            redirectView.setStatusCode(HttpStatus.FOUND);
+            return redirectView;
+        }));
     }
 
     @PostMapping("/remove")
-    public String removeCartItem(@RequestParam("productId") Integer productId,
-                                 HttpServletRequest request) {
-        cartService.removeCartItem(productId);
-        return "redirect:" + request.getHeader("Referer");
+    public Mono<RedirectView> removeCartItem(
+        @RequestParam("productId") Integer productId,
+        @RequestHeader("Referer") String referer) {
+        return cartService.removeCartItem(productId).then(Mono.fromCallable(() -> {
+            RedirectView redirectView = new RedirectView(referer);
+            redirectView.setStatusCode(HttpStatus.FOUND);
+            return redirectView;
+        }));
     }
-
     @PostMapping("/checkout")
-    public String completeOrder() {
-        CustomerOrder completedOrder = cartService.completeOrder();
-        return "redirect:/orders/" + completedOrder.getId();
+    public Mono<RedirectView> completeOrder(ServerWebExchange exchange) {
+
+        Mono<CustomerOrder> checkoutOperation = cartService.completeOrder();
+
+        Mono<RedirectView> successRedirect = checkoutOperation.map(order -> {
+            RedirectView redirectView = new RedirectView("/orders/" + order.getId());
+            redirectView.setStatusCode(HttpStatus.FOUND);
+            return redirectView;
+        });
+
+        Mono<RedirectView> errorRedirect = exchange.getSession()
+            .doOnNext(session -> session.getAttributes().put("errorMessage", "Корзина пуста"))
+            .then(Mono.fromCallable(() -> {
+                RedirectView redirectView = new RedirectView("/cart");
+                redirectView.setStatusCode(HttpStatus.FOUND);
+                return redirectView;
+            }));
+
+        return checkoutOperation.flatMap(order -> successRedirect)
+            .onErrorResume(CartIsEmptyException.class, e -> errorRedirect);
     }
 
-    @ExceptionHandler(CartIsEmptyException.class)
-    public String handleCartIsEmptyException(CartIsEmptyException ex, RedirectAttributes redirectAttributes) {
-        redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-        return "redirect:/cart";
+    @ExceptionHandler({AlreadyInCartException.class, CartIsEmptyException.class})
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Mono<String> handleCartExceptions(RuntimeException ex, ServerWebExchange exchange) {
+        exchange.getAttributes().put("errorMessage", ex.getMessage());
+        return Mono.just("cart");
     }
 }

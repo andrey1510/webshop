@@ -56,6 +56,9 @@ public class ProductPreviewDtoRepository {
     }
 
     private ProductPreviewDto toProductPreviewDto(Product product) {
+        if (product == null) {
+            return null;
+        }
         return new ProductPreviewDto(
             product.getId(),
             product.getTitle(),

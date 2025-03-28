@@ -12,6 +12,7 @@ import org.springframework.data.relational.core.mapping.Table;
 @AllArgsConstructor
 @Data
 @Builder
+@Table("products")
 public class Product {
 
     @Id

@@ -8,10 +8,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
-import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -20,6 +20,7 @@ import java.util.List;
 @Getter
 @Setter
 @Builder
+@Table("customer_orders")
 public class CustomerOrder {
 
     @Id
@@ -32,5 +33,5 @@ public class CustomerOrder {
     private Double completedOrderPrice;
 
     @Transient
-    private List<OrderItem> items;
+    private List<OrderItem> items = new ArrayList<>();;
 }

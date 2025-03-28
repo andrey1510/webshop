@@ -7,13 +7,10 @@ spring:
   r2dbc:
     url: r2dbc:h2:mem:///testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     username: sa
-    password: ""
+    password:
     pool:
-      enabled: true
-      initial-size: 10
-      max-size: 50
-      max-idle-time: 30s
-      max-life-time: 10m
+      initial-size: 5
+      max-size: 10
   h2:
     console:
       enabled: true
@@ -23,10 +20,8 @@ spring:
     suffix: .html
     mode: HTML
     encoding: UTF-8
-  servlet:
-    multipart:
-      max-file-size: 3MB
-      max-request-size: 10MB
+    reactive:
+      max-chunk-size: 8KB
 
 images:
   upload-directory: "/uploads/"

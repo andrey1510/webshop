@@ -13,9 +13,9 @@ public interface CustomerOrderRepository extends R2dbcRepository<CustomerOrder, 
 
     Mono<CustomerOrder> findByStatus(OrderStatus status);
 
-    @Query("SELECT * FROM customer_order WHERE id = :id AND status = :status")
+    @Query("SELECT * FROM customer_orders WHERE id = :id AND status = :status")
     Mono<CustomerOrder> findByIdAndStatus(Integer id, OrderStatus status);
 
-    @Query("SELECT * FROM customer_order WHERE status = :status")
+    @Query("SELECT * FROM customer_orders WHERE status = :status")
     Flux<CustomerOrder> findAllByStatus(OrderStatus status);
 }

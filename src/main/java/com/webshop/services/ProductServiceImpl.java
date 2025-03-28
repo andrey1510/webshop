@@ -16,7 +16,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -76,22 +75,20 @@ public class ProductServiceImpl implements ProductService {
 
 
     @Override
-    @Transactional
     public Mono<Product> createProduct(ProductInputDto productInputDto){
-        return Mono.justOrEmpty(productInputDto.getImage())
+        Mono<String> imagePathMono = Mono.justOrEmpty(productInputDto.image())
             .flatMap(this::processImage)
-            .defaultIfEmpty(null)
-            .flatMap(uniqueFileName -> saveProduct(productInputDto, uniqueFileName));
-    }
+            .defaultIfEmpty(""); //
 
-    private Mono<Product> saveProduct(ProductInputDto productInputDto, String imagePath) {
-        Product product = Product.builder()
-            .title(productInputDto.getTitle())
-            .description(productInputDto.getDescription())
-            .price(productInputDto.getPrice())
-            .imagePath(imagePath)
-            .build();
-        return productRepository.save(product);
+        return imagePathMono.flatMap(imagePath -> {
+            Product product = Product.builder()
+                .title(productInputDto.title())
+                .description(productInputDto.description())
+                .price(productInputDto.price())
+                .imagePath(imagePath.isEmpty() ? null : imagePath)
+                .build();
+            return productRepository.save(product);
+        });
     }
 
     private Mono<String> processImage(FilePart image) {

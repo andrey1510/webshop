@@ -20,32 +20,32 @@ public class OrderController {
 
     private final CustomerOrderService customerOrderService;
 
-//    @GetMapping("/{id}")
-//    public Mono<Rendering> getCompletedOrder(@PathVariable("id") Integer orderId) {
-//        return customerOrderService.getCompletedOrderById(orderId)
-//            .map(completedOrder -> Rendering.view("order")
-//                .modelAttribute("order", completedOrder)
-//                .build())
-//            .switchIfEmpty(Mono.error(new CompletedCustomerOrderNotFoundException("Заказ не найден")));
-//    }
-//
-//    @GetMapping
-//    public Mono<Rendering> getAllCompletedOrders() {
-//        return customerOrderService.getCompletedOrders()
-//            .collectList()
-//            .flatMap(completedOrders -> customerOrderService.getTotalPriceOfCompletedOrders()
-//                .map(totalPrice -> Rendering.view("orders")
-//                    .modelAttribute("orders", completedOrders)
-//                    .modelAttribute("totalPrice", totalPrice)
-//                    .build()));
-//    }
-//
-//    @ExceptionHandler(CompletedCustomerOrderNotFoundException.class)
-//    @ResponseStatus(HttpStatus.NOT_FOUND)
-//    public Mono<Rendering> handleCustomerOrderNotFoundException(CompletedCustomerOrderNotFoundException ex) {
-//        return Mono.just(Rendering.view("order")
-//            .modelAttribute("errorMessage", ex.getMessage())
-//            .modelAttribute("order", null)
-//            .build());
-//    }
+    @GetMapping("/{id}")
+    public Mono<Rendering> getCompletedOrder(@PathVariable("id") Integer orderId) {
+        return customerOrderService.getCompletedOrderById(orderId)
+            .map(completedOrder -> Rendering.view("order")
+                .modelAttribute("order", completedOrder)
+                .build())
+            .switchIfEmpty(Mono.error(new CompletedCustomerOrderNotFoundException("Заказ не найден")));
+    }
+
+    @GetMapping
+    public Mono<Rendering> getAllCompletedOrders() {
+        return customerOrderService.getCompletedOrders()
+            .collectList()
+            .flatMap(completedOrders -> customerOrderService.getTotalPriceOfCompletedOrders()
+                .map(totalPrice -> Rendering.view("orders")
+                    .modelAttribute("orders", completedOrders)
+                    .modelAttribute("totalPrice", totalPrice)
+                    .build()));
+    }
+
+    @ExceptionHandler(CompletedCustomerOrderNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Mono<Rendering> handleCustomerOrderNotFoundException(CompletedCustomerOrderNotFoundException ex) {
+        return Mono.just(Rendering.view("order")
+            .modelAttribute("errorMessage", ex.getMessage())
+            .modelAttribute("order", null)
+            .build());
+    }
 }
