@@ -9,6 +9,8 @@ import org.springframework.web.reactive.config.WebFluxConfigurer;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import java.nio.file.Paths;
+
 import static org.springframework.web.reactive.function.server.RouterFunctions.resources;
 
 @Configuration
@@ -19,11 +21,10 @@ public class WebConfiguration implements WebFluxConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        String baseDir = System.getProperty("catalina.base") != null ?
-            System.getProperty("catalina.base") : "";
-        String uploadPath = "file:" + baseDir + uploadDirectory;
+        String uploadPath = Paths.get(uploadDirectory).toAbsolutePath().toString();
 
-        registry.addResourceHandler(uploadDirectory + "**").addResourceLocations(uploadPath);
+        registry.addResourceHandler("/uploads/**")
+            .addResourceLocations("file:" + uploadPath + "/");
     }
 
 

@@ -9,7 +9,9 @@ import com.webshop.exceptions.WrongImageTypeException;
 import com.webshop.repositories.ProductPreviewDtoRepository;
 import com.webshop.repositories.ProductRepository;
 import com.webshop.utils.ImageUtils;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,7 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -39,7 +41,14 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Mono<Product> getProductById(Integer id) {
         return productRepository.findById(id)
-            .switchIfEmpty(Mono.error(new ProductNotFoundException("Товар не найден")));
+            .switchIfEmpty(Mono.error(new ProductNotFoundException("Товар не найден")))
+            .doOnNext(product -> {
+                if (product.getImagePath() != null) {
+                    log.info("Found product with ID: {}, imagePath: {}", id, product.getImagePath());
+                } else {
+                    log.warn("Product with ID: {} has null imagePath", id);
+                }
+            });
     }
 
     @Override
@@ -78,7 +87,7 @@ public class ProductServiceImpl implements ProductService {
     public Mono<Product> createProduct(ProductInputDto productInputDto){
         Mono<String> imagePathMono = Mono.justOrEmpty(productInputDto.image())
             .flatMap(this::processImage)
-            .defaultIfEmpty(""); //
+            .defaultIfEmpty("");
 
         return imagePathMono.flatMap(imagePath -> {
             Product product = Product.builder()
@@ -108,14 +117,34 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
-    private Mono<Void> saveImage(FilePart file, String relativePath) {
-        Path fullPath = Paths.get(uploadDirectory, relativePath);
+    @PostConstruct
+    public void init() {
+        Path uploadDir = Paths.get(uploadDirectory).toAbsolutePath();
+        try {
+            Files.createDirectories(uploadDir);
+            log.info("Upload directory created at: {}", uploadDir);
+        } catch (IOException e) {
+            log.error("Failed to create upload directory", e);
+        }
+    }
+
+    private Mono<Void> saveImage(FilePart file, String filename) {
         return Mono.fromCallable(() -> {
-                Files.createDirectories(fullPath.getParent());
-                return fullPath;
+                String uploadDir = System.getenv("UPLOAD_DIR") != null
+                    ? System.getenv("UPLOAD_DIR")
+                    : uploadDirectory;
+
+                Path filePath = Paths.get(uploadDir, filename).toAbsolutePath();
+
+                if (!Files.exists(filePath.getParent())) {
+                    Files.createDirectories(filePath.getParent());
+                }
+
+                return filePath;
             })
             .flatMap(file::transferTo)
-            .onErrorMap(IOException.class, e -> new RuntimeException("Ошибка при сохранении файла: " + relativePath, e));
+            .doOnSuccess(v -> log.info("Image saved to: {}", filename))
+            .doOnError(e -> log.error("Failed to save image", e));
     }
 
 }
