@@ -8,7 +8,9 @@ import com.webshop.exceptions.CartIsEmptyException;
 import com.webshop.exceptions.ItemIsNotInCartException;
 import com.webshop.exceptions.WrongQuantityException;
 import com.webshop.repositories.CustomerOrderRepository;
+import com.webshop.repositories.OrderItemProductRepository;
 import com.webshop.repositories.OrderItemRepository;
+import com.webshop.repositories.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,11 +29,25 @@ public class CartServiceImpl implements CartService{
 
     private final CustomerOrderRepository customerOrderRepository;
     private final OrderItemRepository orderItemRepository;
+    private final OrderItemProductRepository orderItemProductRepository;
+    private final ProductRepository productRepository;
 
     private final ProductService productService;
 
     @Override
-    public Mono<CustomerOrder> getCurrentCart() {
+    public Mono<CustomerOrder> getCurrentCartWithProducts() {
+        return customerOrderRepository.findByStatus(OrderStatus.CART)
+            .switchIfEmpty(createNewCart())
+            .flatMap(order ->
+                orderItemProductRepository.findByCustomerOrderIdWithProduct(order.getId())
+                    .collectList()
+                    .doOnNext(order::setItems)
+                    .thenReturn(order)
+            );
+    }
+
+    @Override
+    public Mono<CustomerOrder> getCurrentCartNoProducts() {
         return customerOrderRepository.findByStatus(OrderStatus.CART)
             .switchIfEmpty(createNewCart())
             .flatMap(order -> orderItemRepository.findByCustomerOrderId(order.getId())
@@ -41,7 +57,7 @@ public class CartServiceImpl implements CartService{
     }
 
     public Mono<Map<Integer, Integer>> getCartProductsQuantity() {
-        return getCurrentCart()
+        return getCurrentCartWithProducts()
             .flatMapMany(order -> Flux.fromIterable(order.getItems() != null ? order.getItems() : Collections.emptyList()))
             .filter(item -> item.getProductId() != null)
             .collectMap(
@@ -61,7 +77,7 @@ public class CartServiceImpl implements CartService{
 
     @Override
     public Mono<CustomerOrder> completeOrder() {
-        return getCurrentCart()
+        return getCurrentCartWithProducts()
             .flatMap(orderInCart -> {
                 if (orderInCart.getItems().isEmpty()) {
                     return Mono.error(new CartIsEmptyException("Корзина пустая."));
@@ -88,7 +104,7 @@ public class CartServiceImpl implements CartService{
             return Mono.error(new WrongQuantityException("Количество должно быть больше 0"));
         }
 
-        return getCurrentCart()
+        return getCurrentCartNoProducts()
             .doOnNext(order -> log.info("Retrieved current cart: {}", order))
             .flatMap(order -> findCartItemByProductId(order, productId)
                 .doOnNext(item -> log.warn("Product already in cart: {}", item))
@@ -120,7 +136,7 @@ public class CartServiceImpl implements CartService{
             return Mono.error(new WrongQuantityException("Количество должно быть больше 0"));
         }
 
-        Mono<CustomerOrder> orderMono = getCurrentCart().cache();
+        Mono<CustomerOrder> orderMono = getCurrentCartNoProducts().cache();
 
         Mono<OrderItem> existingItemMono = orderMono
             .flatMap(order -> findCartItemByProductId(order, productId))
@@ -142,7 +158,7 @@ public class CartServiceImpl implements CartService{
 
     @Override
     public Mono<Void> removeCartItem(Integer productId) {
-        return getCurrentCart()
+        return getCurrentCartNoProducts()
             .flatMap(orderInCart -> findCartItemByProductId(orderInCart, productId)
                 .flatMap(existingItem -> {
                     orderInCart.getItems().remove(existingItem);

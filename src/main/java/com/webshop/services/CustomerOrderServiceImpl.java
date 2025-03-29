@@ -4,9 +4,9 @@ import com.webshop.entities.CustomerOrder;
 import com.webshop.entities.OrderStatus;
 import com.webshop.exceptions.CompletedCustomerOrderNotFoundException;
 import com.webshop.repositories.CustomerOrderRepository;
+import com.webshop.repositories.OrderItemProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -16,22 +16,26 @@ import reactor.core.publisher.Mono;
 public class CustomerOrderServiceImpl implements CustomerOrderService {
 
     private final CustomerOrderRepository customerOrderRepository;
+    private final OrderItemProductRepository orderItemProductRepository;
 
-    @Transactional
     @Override
     public Mono<CustomerOrder> getCompletedOrderById(Integer orderId) {
         return customerOrderRepository.findByIdAndStatus(orderId, OrderStatus.COMPLETED)
-            .switchIfEmpty(Mono.error(new CompletedCustomerOrderNotFoundException("Заказ не найден")));
+            .switchIfEmpty(Mono.error(new CompletedCustomerOrderNotFoundException("Заказ не найден")))
+            .flatMap(order ->
+                orderItemProductRepository.findByCustomerOrderIdWithProduct(orderId)
+                    .collectList()
+                    .doOnNext(order::setItems)
+                    .thenReturn(order)
+            );
     }
 
-    @Transactional
     @Override
     public Flux<CustomerOrder> getCompletedOrders() {
         return customerOrderRepository.findAllByStatus(OrderStatus.COMPLETED);
     }
 
     @Override
-    @Transactional
     public Mono<Double> getTotalPriceOfCompletedOrders() {
         return customerOrderRepository.findAllByStatus(OrderStatus.COMPLETED)
             .map(CustomerOrder::getCompletedOrderPrice)

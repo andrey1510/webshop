@@ -22,7 +22,6 @@ import reactor.core.publisher.Mono;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Controller
 @RequiredArgsConstructor
@@ -43,7 +42,7 @@ public class ProductController {
                 return Mono.empty();
             });
 
-        Mono<Integer> cartQuantityMono = cartService.getCurrentCart()
+        Mono<Integer> cartQuantityMono = cartService.getCurrentCartNoProducts()
             .flatMap(cart -> cartService.findCartItemByProductId(cart, productId))
             .map(OrderItem::getQuantity)
             .defaultIfEmpty(0);

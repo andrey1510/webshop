@@ -3,7 +3,6 @@ package com.webshop.services;
 import com.webshop.dto.ProductInputDto;
 import com.webshop.dto.ProductPreviewDto;
 import com.webshop.entities.Product;
-import org.springframework.data.domain.Page;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

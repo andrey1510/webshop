@@ -8,7 +8,9 @@ import java.util.Map;
 
 public interface CartService {
 
-    Mono<CustomerOrder> getCurrentCart();
+    Mono<CustomerOrder> getCurrentCartWithProducts();
+
+    Mono<CustomerOrder> getCurrentCartNoProducts();
 
     Mono<Map<Integer, Integer>> getCartProductsQuantity();
 

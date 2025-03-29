@@ -18,4 +18,6 @@ public interface CustomerOrderRepository extends R2dbcRepository<CustomerOrder, 
 
     @Query("SELECT * FROM customer_orders WHERE status = :status")
     Flux<CustomerOrder> findAllByStatus(OrderStatus status);
+
+
 }

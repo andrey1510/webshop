@@ -1,16 +1,12 @@
 package com.webshop.controllers;
 
 import com.webshop.entities.CustomerOrder;
-import com.webshop.entities.OrderItem;
 import com.webshop.exceptions.AlreadyInCartException;
 import com.webshop.exceptions.CartIsEmptyException;
-import com.webshop.exceptions.WrongQuantityException;
 import com.webshop.services.CartService;
-import com.webshop.services.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,14 +15,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import org.springframework.web.reactive.result.view.RedirectView;
 import org.springframework.web.bind.annotation.RequestHeader;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -36,38 +28,20 @@ import java.util.stream.Collectors;
 public class CartController {
 
     private final CartService cartService;
-    private final ProductService productService;
 
     @GetMapping
     public Mono<String> getCart(ServerWebExchange exchange) {
-        Mono<CustomerOrder> cartMono = cartService.getCurrentCart()
-            .doOnNext(order -> {
-                if (order.getItems() == null) {
-                    order.setItems(new ArrayList<>());
-                }
-            })
-
-            //логирование
+        return cartService.getCurrentCartWithProducts()
             .doOnNext(order -> log.info("Cart contents:\n{}", formatOrderForLog(order)))
-            .doOnError(e -> log.error("Error retrieving cart", e));
-
-
-        Mono<Double> totalPriceMono = cartMono.flatMap(order -> {
-            List<OrderItem> items = order.getItems() != null ? order.getItems() : Collections.emptyList();
-            return Flux.fromIterable(items)
-                .flatMap(item -> productService.getProductById(item.getProductId())
-                    .map(product -> product.getPrice() * item.getQuantity()))
-                .reduce(0.0, Double::sum);
-        });
-
-        return cartMono.zipWith(totalPriceMono)
-            .flatMap(tuple -> {
-                CustomerOrder order = tuple.getT1();
-                Double totalPrice = tuple.getT2();
+            .doOnError(e -> log.error("Error retrieving cart", e))
+            .flatMap(order -> {
+                double totalPrice = order.getItems().stream()
+                    .filter(item -> item.getProduct() != null)
+                    .mapToDouble(item -> item.getProduct().getPrice() * item.getQuantity())
+                    .sum();
 
                 exchange.getAttributes().put("cart", order);
                 exchange.getAttributes().put("totalPrice", totalPrice);
-
                 return Mono.just("cart");
             });
     }
@@ -80,10 +54,13 @@ public class CartController {
             order.getItems().size(),
             order.getItems().stream()
                 .map(item -> String.format(
-                    "  - Item ID: %d, Product ID: %d, Quantity: %d",
+                    "  - Item ID: %d, Product: %s (ID: %d), Quantity: %d, Price: %.2f",
                     item.getId(),
+                    item.getProduct() != null ? item.getProduct().getTitle() : "null",
                     item.getProductId(),
-                    item.getQuantity()))
+                    item.getQuantity(),
+                    item.getProduct() != null ? item.getProduct().getPrice() : 0.0
+                ))
                 .collect(Collectors.joining("\n"))
         );
     }
@@ -95,7 +72,7 @@ public class CartController {
         @RequestParam(value = "quantity", defaultValue = "1") Integer quantity,
         ServerWebExchange exchange) {
 
-        System.out.println("111111111111111111111111111 addCartItem controller");
+        System.out.println("------------------------ addCartItem controller");
 
         log.info("ADD TO CART ENDPOINT HIT - Product ID: {}, Quantity: {}", productId, quantity);
 
