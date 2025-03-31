@@ -22,8 +22,10 @@ import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,7 +40,6 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductPreviewDtoRepository productPreviewDtoRepository;
     private final ProductRepository productRepository;
-
 
     @Override
     public Mono<Product> getProductById(Integer id) {
@@ -97,37 +98,34 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Mono<Product> createProduct(ProductInputDto productInputDto){
-        Mono<String> imagePathMono = Mono.justOrEmpty(productInputDto.image())
-            .flatMap(this::processImage)
-            .defaultIfEmpty("");
-
-        return imagePathMono.flatMap(imagePath -> {
-            Product product = Product.builder()
-                .title(productInputDto.title())
-                .description(productInputDto.description())
-                .price(productInputDto.price())
-                .imagePath(imagePath.isEmpty() ? null : imagePath)
-                .build();
-            return productRepository.save(product);
-        });
-    }
-
-    private Mono<String> processImage(FilePart image) {
-        validateImage(image);
-        String uniqueFileName = ImageUtils.generateUniqueImageName(image.filename());
-        return saveImage(image, uniqueFileName).then(Mono.just(uniqueFileName));
-    }
-
-
-
-    private void validateImage(FilePart file) {
-        if (!ImageUtils.isValidImageExtension(file.filename())) {
-            throw new WrongImageTypeException("Недопустимый формат изображения, разрешены: jpeg, jpg, png.");
-        }
-        if (!ImageUtils.isValidImageSize(file.headers().getContentLength())) {
-            throw new MaxImageSizeExceededException("Размер файла не должен превышать 3 МБ.");
-        }
+    public Mono<Product> createProduct(ProductInputDto productInputDto) {
+        return Mono.justOrEmpty(productInputDto.image())
+            .flatMap(image -> {
+                if (!ImageUtils.isValidImageExtension(image.filename()))
+                    return Mono.error(new WrongImageTypeException("Недопустимый формат изображения, разрешены: jpeg, jpg, png."));
+                if (!ImageUtils.isValidImageSize(image.headers().getContentLength()))
+                    return Mono.error(new MaxImageSizeExceededException("Размер файла не должен превышать 3 МБ."));
+                String uniqueFileName = ImageUtils.generateUniqueImageName(image.filename());
+                return saveImage(image, uniqueFileName)
+                    .thenReturn(uniqueFileName);
+            })
+            .onErrorResume(e -> {
+                if (e instanceof WrongImageTypeException || e instanceof MaxImageSizeExceededException) {
+                    log.warn("Image validation failed, using default image: {}", e.getMessage());
+                    return Mono.just("noimage.png");
+                }
+                return Mono.error(e);
+            })
+            .defaultIfEmpty("noimage.png")
+            .flatMap(imagePath -> {
+                Product product = Product.builder()
+                    .title(productInputDto.title())
+                    .description(productInputDto.description())
+                    .price(productInputDto.price())
+                    .imagePath(imagePath)
+                    .build();
+                return productRepository.save(product);
+            });
     }
 
     @PostConstruct
@@ -136,8 +134,15 @@ public class ProductServiceImpl implements ProductService {
         try {
             Files.createDirectories(uploadDir);
             log.info("Upload directory created at: {}", uploadDir);
+
+            Path defaultImagePath = uploadDir.resolve("noimage.png");
+            if (!Files.exists(defaultImagePath)) {
+                try (InputStream is = getClass().getResourceAsStream("/images/noimage.png")) {
+                    if (is != null) Files.copy(is, defaultImagePath);
+                }
+            }
         } catch (IOException e) {
-            log.error("Failed to create upload directory", e);
+            log.error("Failed to initialize upload directory", e);
         }
     }
 
@@ -146,18 +151,17 @@ public class ProductServiceImpl implements ProductService {
                 String uploadDir = System.getenv("UPLOAD_DIR") != null
                     ? System.getenv("UPLOAD_DIR")
                     : uploadDirectory;
-
-                Path filePath = Paths.get(uploadDir, filename).toAbsolutePath();
-
-                if (!Files.exists(filePath.getParent())) {
-                    Files.createDirectories(filePath.getParent());
-                }
-
-                return filePath;
+                return Paths.get(uploadDir, filename).toAbsolutePath();
             })
-            .flatMap(file::transferTo)
-            .doOnSuccess(v -> log.info("Image saved to: {}", filename))
-            .doOnError(e -> log.error("Failed to save image", e));
+            .flatMap(filePath -> {
+                return Mono.fromCallable(() -> {
+                        if (!Files.exists(filePath.getParent())) {
+                            Files.createDirectories(filePath.getParent());
+                        }
+                        return filePath;
+                    })
+                    .subscribeOn(Schedulers.boundedElastic());
+            })
+            .flatMap(file::transferTo);
     }
-
 }

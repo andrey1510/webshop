@@ -2,7 +2,6 @@ package com.webshop.dto;
 
 import org.springframework.http.codec.multipart.FilePart;
 
-
 public record ProductInputDto(
     String title,
     String description,
