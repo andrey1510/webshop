@@ -13,6 +13,8 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -52,7 +54,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Flux<ProductPreviewDto> getProductPreviewDtos(
+    public Mono<Page<ProductPreviewDto>> getPageableProductPreviewDtos(
         String title, Double minPrice, Double maxPrice, String sort, int page, int size) {
 
         Sort.Direction direction = Sort.Direction.ASC;
@@ -69,19 +71,30 @@ public class ProductServiceImpl implements ProductService {
 
         Pageable pageable = PageRequest.of(page, size, direction, property);
 
-        if (title != null && !title.isEmpty()) {
-            return productPreviewDtoRepository.findProductPreviewDtosByTitleContaining(title, pageable);
-        } else if (minPrice != null && maxPrice != null) {
-            return productPreviewDtoRepository.findProductPreviewDtosByPriceBetween(minPrice, maxPrice, pageable);
-        } else if (minPrice != null) {
-            return productPreviewDtoRepository.findProductPreviewDtosByPriceGreaterThan(minPrice, pageable);
-        } else if (maxPrice != null) {
-            return productPreviewDtoRepository.findProductPreviewDtosByPriceLessThan(maxPrice, pageable);
-        } else {
-            return productPreviewDtoRepository.findAllProductPreviewDtos(pageable);
-        }
-    }
+        Mono<Long> countMono;
+        Flux<ProductPreviewDto> productsFlux;
 
+        if (title != null && !title.isEmpty()) {
+            countMono = productRepository.countByTitleContaining(title);
+            productsFlux = productPreviewDtoRepository.findProductPreviewDtosByTitleContaining(title, pageable);
+        } else if (minPrice != null && maxPrice != null) {
+            countMono = productRepository.countByPriceBetween(minPrice, maxPrice);
+            productsFlux = productPreviewDtoRepository.findProductPreviewDtosByPriceBetween(minPrice, maxPrice, pageable);
+        } else if (minPrice != null) {
+            countMono = productRepository.countByPriceGreaterThan(minPrice);
+            productsFlux = productPreviewDtoRepository.findProductPreviewDtosByPriceGreaterThan(minPrice, pageable);
+        } else if (maxPrice != null) {
+            countMono = productRepository.countByPriceLessThan(maxPrice);
+            productsFlux = productPreviewDtoRepository.findProductPreviewDtosByPriceLessThan(maxPrice, pageable);
+        } else {
+            countMono = productRepository.count();
+            productsFlux = productPreviewDtoRepository.findAllProductPreviewDtos(pageable);
+        }
+
+        return productsFlux.collectList()
+            .zipWith(countMono)
+            .map(tuple -> new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()));
+    }
 
     @Override
     public Mono<Product> createProduct(ProductInputDto productInputDto){

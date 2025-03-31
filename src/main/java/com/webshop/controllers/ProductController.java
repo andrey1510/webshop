@@ -7,6 +7,8 @@ import com.webshop.exceptions.ProductNotFoundException;
 import com.webshop.services.CartService;
 import com.webshop.services.ProductService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -20,9 +22,12 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
+@Slf4j
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/products")
@@ -69,28 +74,38 @@ public class ProductController {
         @RequestParam(defaultValue = "asc") String sort,
         ServerWebExchange exchange) {
 
-        Flux<ProductPreviewDto> productsFlux = productService.getProductPreviewDtos(
-            title, minPrice, maxPrice, sort, page, size);
+        Mono<Page<ProductPreviewDto>> productsPageMono = productService.getPageableProductPreviewDtos(
+                title, minPrice, maxPrice, sort, page, size)
+            .doOnError(e -> log.error("Error loading products", e));
 
         Mono<Map<Integer, Integer>> cartQuantitiesMono = cartService.getCartProductsQuantity()
+            .doOnNext(quantities -> log.info("Cart quantities: {}", quantities))
+            .doOnError(e -> log.error("Error loading cart quantities", e))
             .defaultIfEmpty(Collections.emptyMap());
 
-        return productsFlux
-            .collectList()
-            .zipWith(cartQuantitiesMono)
+        return Mono.zip(productsPageMono, cartQuantitiesMono)
             .flatMap(tuple -> {
-                List<ProductPreviewDto> products = tuple.getT1();
+                Page<ProductPreviewDto> productsPage = tuple.getT1();
                 Map<Integer, Integer> cartQuantities = tuple.getT2();
 
-                Map<String, Object> attributes = exchange.getAttributes();
-                attributes.put("products", products != null ? products : Collections.emptyList());
-                attributes.put("currentPage", page);
-                attributes.put("pageSize", size);
-                attributes.put("title", title);
-                attributes.put("minPrice", minPrice);
-                attributes.put("maxPrice", maxPrice);
-                attributes.put("sort", sort);
-                attributes.put("cartProductsQuantities", cartQuantities != null ? cartQuantities : Collections.emptyMap());
+                Map<String, Object> model = new HashMap<>();
+                model.put("products", productsPage.getContent());
+                model.put("productsPage", productsPage);
+                model.put("currentPage", page);
+                model.put("pageSize", size);
+                model.put("sort", sort);
+                model.put("cartProductsQuantities", cartQuantities);
+
+                if (title != null) model.put("title", title);
+                if (minPrice != null) model.put("minPrice", minPrice);
+                if (maxPrice != null) model.put("maxPrice", maxPrice);
+
+                exchange.getAttributes().clear();
+                model.forEach((key, value) -> {
+                    if (value != null) {
+                        exchange.getAttributes().put(key, value);
+                    }
+                });
 
                 return Mono.just("products");
             });

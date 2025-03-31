@@ -86,7 +86,7 @@
 
 <!-- Форма фильтрации -->
 <form th:method="get" th:action="@{/products}" class="filters">
-    <!-- Скрытые поля для пагинации -->
+
     <input type="hidden" name="page" th:value="${currentPage}" />
     <input type="hidden" name="size" th:value="${pageSize}" />
 
@@ -112,7 +112,8 @@
 
 <!-- Список товаров -->
 <div class="product-container">
-    <div th:each="product : ${products.content}" class="product-card">
+
+    <div th:each="product : ${products}" class="product-card">
         <h3>
             <a th:href="@{/products/{id}(id=${product.id})}" th:text="${product.title}">Название товара</a>
         </h3>
@@ -165,13 +166,14 @@
 
 <!-- Пагинация -->
 <div>
-    <span th:text="'Страница ' + (${currentPage + 1}) + ' из ' + ${totalPages}"></span>
+
+    <span th:text="'Страница ' + (${currentPage + 1}) + ' из ' + ${productsPage.totalPages}"></span>
     <nav>
         <ul>
             <li th:if="${currentPage > 0}">
                 <a th:href="@{/products(page=${currentPage - 1}, size=${pageSize}, title=${title}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort})}">Предыдущая</a>
             </li>
-            <li th:if="${currentPage < totalPages - 1}">
+            <li th:if="${currentPage + 1 < productsPage.totalPages}">
                 <a th:href="@{/products(page=${currentPage + 1}, size=${pageSize}, title=${title}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort})}">Следующая</a>
             </li>
         </ul>

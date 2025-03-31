@@ -1,6 +1,5 @@
 package com.webshop.controllers;
 
-import com.webshop.entities.CustomerOrder;
 import com.webshop.exceptions.AlreadyInCartException;
 import com.webshop.exceptions.CartIsEmptyException;
 import com.webshop.services.CartService;
@@ -19,8 +18,6 @@ import reactor.core.publisher.Mono;
 import org.springframework.web.reactive.result.view.RedirectView;
 import org.springframework.web.bind.annotation.RequestHeader;
 
-import java.util.stream.Collectors;
-
 @Slf4j
 @Controller
 @RequiredArgsConstructor
@@ -32,7 +29,6 @@ public class CartController {
     @GetMapping
     public Mono<String> getCart(ServerWebExchange exchange) {
         return cartService.getCurrentCartWithProducts()
-            .doOnNext(order -> log.info("Cart contents:\n{}", formatOrderForLog(order)))
             .doOnError(e -> log.error("Error retrieving cart", e))
             .flatMap(order -> {
                 double totalPrice = order.getItems().stream()
@@ -46,44 +42,18 @@ public class CartController {
             });
     }
 
-    private String formatOrderForLog(CustomerOrder order) {
-        return String.format(
-            "Order ID: %d\nStatus: %s\nItems count: %d\nItems:\n%s",
-            order.getId(),
-            order.getStatus(),
-            order.getItems().size(),
-            order.getItems().stream()
-                .map(item -> String.format(
-                    "  - Item ID: %d, Product: %s (ID: %d), Quantity: %d, Price: %.2f",
-                    item.getId(),
-                    item.getProduct() != null ? item.getProduct().getTitle() : "null",
-                    item.getProductId(),
-                    item.getQuantity(),
-                    item.getProduct() != null ? item.getProduct().getPrice() : 0.0
-                ))
-                .collect(Collectors.joining("\n"))
-        );
-    }
-
-
     @PostMapping(value = "/add")
     public Mono<String> addCartItem(
         @RequestParam("productId") Integer productId,
         @RequestParam(value = "quantity", defaultValue = "1") Integer quantity,
         ServerWebExchange exchange) {
-
-        System.out.println("------------------------ addCartItem controller");
-
-        log.info("ADD TO CART ENDPOINT HIT - Product ID: {}, Quantity: {}", productId, quantity);
-
         return cartService.addItemToCart(productId, quantity)
             .then(Mono.defer(() -> {
                 String referer = exchange.getRequest().getHeaders().getFirst("Referer");
-                log.info("Redirecting back to: {}", referer);
                 return Mono.just("redirect:" + (referer != null ? referer : "/products"));
             }))
             .onErrorResume(e -> {
-                log.error("Error adding to cart: {}", e.getMessage());
+                log.error("Error adding item to cart: {}", e.getMessage());
                 return exchange.getSession()
                     .doOnNext(session -> session.getAttributes().put("errorMessage", e.getMessage()))
                     .thenReturn("redirect:" + exchange.getRequest().getHeaders().getFirst("Referer"));
@@ -96,7 +66,9 @@ public class CartController {
         @RequestParam("productId") Integer productId,
         @RequestParam("quantity") Integer quantity,
         @RequestHeader("Referer") String referer) {
-        return cartService.updateItemQuantity(productId, quantity).then(Mono.fromCallable(() -> {
+        return cartService.updateItemQuantity(productId, quantity)
+            .doOnError(e -> log.error("Failed to update: {}, Error: {}", productId, e.getMessage()))
+            .then(Mono.fromCallable(() -> {
             RedirectView redirectView = new RedirectView(referer);
             redirectView.setStatusCode(HttpStatus.FOUND);
             return redirectView;
@@ -114,26 +86,15 @@ public class CartController {
         }));
     }
     @PostMapping("/checkout")
-    public Mono<RedirectView> completeOrder(ServerWebExchange exchange) {
-
-        Mono<CustomerOrder> checkoutOperation = cartService.completeOrder();
-
-        Mono<RedirectView> successRedirect = checkoutOperation.map(order -> {
-            RedirectView redirectView = new RedirectView("/orders/" + order.getId());
-            redirectView.setStatusCode(HttpStatus.FOUND);
-            return redirectView;
-        });
-
-        Mono<RedirectView> errorRedirect = exchange.getSession()
-            .doOnNext(session -> session.getAttributes().put("errorMessage", "Корзина пуста"))
-            .then(Mono.fromCallable(() -> {
-                RedirectView redirectView = new RedirectView("/cart");
-                redirectView.setStatusCode(HttpStatus.FOUND);
-                return redirectView;
-            }));
-
-        return checkoutOperation.flatMap(order -> successRedirect)
-            .onErrorResume(CartIsEmptyException.class, e -> errorRedirect);
+    public Mono<String> completeOrder(ServerWebExchange exchange) {
+        return cartService.completeOrder()
+            .map(order -> "redirect:/orders/" + order.getId())
+            .onErrorResume(CartIsEmptyException.class, e -> exchange.getSession()
+                .doOnNext(session -> {
+                    session.getAttributes().put("errorMessage", e.getMessage());
+                    log.warn("Cart checkout error: {}", e.getMessage());
+                })
+                .thenReturn("redirect:/cart"));
     }
 
     @ExceptionHandler({AlreadyInCartException.class, CartIsEmptyException.class})

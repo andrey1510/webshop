@@ -10,7 +10,6 @@ import com.webshop.exceptions.WrongQuantityException;
 import com.webshop.repositories.CustomerOrderRepository;
 import com.webshop.repositories.OrderItemProductRepository;
 import com.webshop.repositories.OrderItemRepository;
-import com.webshop.repositories.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,7 +29,6 @@ public class CartServiceImpl implements CartService{
     private final CustomerOrderRepository customerOrderRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderItemProductRepository orderItemProductRepository;
-    private final ProductRepository productRepository;
 
     private final ProductService productService;
 
@@ -79,9 +77,7 @@ public class CartServiceImpl implements CartService{
     public Mono<CustomerOrder> completeOrder() {
         return getCurrentCartWithProducts()
             .flatMap(orderInCart -> {
-                if (orderInCart.getItems().isEmpty()) {
-                    return Mono.error(new CartIsEmptyException("Корзина пустая."));
-                }
+                if (orderInCart.getItems().isEmpty()) return Mono.error(new CartIsEmptyException("Корзина пустая."));
 
                 orderInCart.setStatus(OrderStatus.COMPLETED);
                 orderInCart.setTimestamp(LocalDateTime.now());
@@ -97,20 +93,13 @@ public class CartServiceImpl implements CartService{
 
     @Override
     public Mono<Void> addItemToCart(Integer productId, Integer quantity) {
-        log.info("Attempting to add product ID {} with quantity {}", productId, quantity);
 
-        if (quantity <= 0) {
-            log.error("Invalid quantity: {}", quantity);
-            return Mono.error(new WrongQuantityException("Количество должно быть больше 0"));
-        }
+        if (quantity <= 0) return Mono.error(new WrongQuantityException("Количество должно быть больше 0"));
 
         return getCurrentCartNoProducts()
-            .doOnNext(order -> log.info("Retrieved current cart: {}", order))
             .flatMap(order -> findCartItemByProductId(order, productId)
-                .doOnNext(item -> log.warn("Product already in cart: {}", item))
                 .flatMap(item -> Mono.error(new AlreadyInCartException("Товар уже в корзине")))
                 .switchIfEmpty(productService.getProductById(productId)
-                    .doOnNext(product -> log.info("Found product: {}", product))
                     .flatMap(product -> {
                         OrderItem newItem = OrderItem.builder()
                             .customerOrderId(order.getId())
@@ -132,29 +121,18 @@ public class CartServiceImpl implements CartService{
     @Override
     public Mono<Void> updateItemQuantity(Integer productId, Integer quantity) {
 
-        if (quantity <= 0) {
-            return Mono.error(new WrongQuantityException("Количество должно быть больше 0"));
-        }
+        if (quantity <= 0) return Mono.error(new WrongQuantityException("Количество должно быть больше 0"));
 
-        Mono<CustomerOrder> orderMono = getCurrentCartNoProducts().cache();
-
-        Mono<OrderItem> existingItemMono = orderMono
+        return getCurrentCartNoProducts()
             .flatMap(order -> findCartItemByProductId(order, productId))
-            .switchIfEmpty(Mono.error(new ItemIsNotInCartException("Товар не найден в корзине.")));
-
-        Mono<Void> updateOperation = existingItemMono
-            .zipWith(orderMono)
-            .flatMap(tuple -> {
-                OrderItem item = tuple.getT1();
-                CustomerOrder order = tuple.getT2();
-
+            .switchIfEmpty(Mono.defer(() -> Mono.error(new ItemIsNotInCartException("Товар не найден в корзине."))))
+            .flatMap(item -> {
                 item.setQuantity(quantity);
-                return customerOrderRepository.save(order);
-            }).then();
-
-        return updateOperation.then();
+                return orderItemRepository.save(item)
+                    .doOnError(e -> log.error("Failed to update item quantity", e))
+                    .then();
+            });
     }
-
 
     @Override
     public Mono<Void> removeCartItem(Integer productId) {
