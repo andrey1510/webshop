@@ -1,33 +1,37 @@
 package com.webshop.repositories;
 
-import com.webshop.entities.OrderItem;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.jdbc.Sql;
+import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import reactor.test.StepVerifier;
 
-import java.util.Optional;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
-@DataJpaTest
-@Sql("/test-data-full.sql")
-public class OrderItemRepositoryTest {
+@DataR2dbcTest
+@ActiveProfiles("test")
+@SpringJUnitConfig
+class OrderItemRepositoryTest {
 
     @Autowired
     private OrderItemRepository orderItemRepository;
 
     @Test
-    public void testDeleteOrderItem() {
+    void testFindByCustomerOrderId() {
+        StepVerifier.create(orderItemRepository.findByCustomerOrderId(6).collectList())
+            .expectNextMatches(items -> {
+                if (items.size() != 2) return false;
+                return items.stream()
+                    .allMatch(item -> item.getCustomerOrderId().equals(6));
+            })
+            .verifyComplete();
+    }
 
-        Optional<OrderItem> existingItemOptional = orderItemRepository.findById(6);
-        assertTrue(existingItemOptional.isPresent());
-
-        OrderItem existingItem = existingItemOptional.get();
-        orderItemRepository.delete(existingItem);
-
-        Optional<OrderItem> deletedItemOptional = orderItemRepository.findById(6);
-        assertFalse(deletedItemOptional.isPresent());
+    @Test
+    void testFindByCustomerOrderId_Empty() {
+        StepVerifier.create(orderItemRepository.findByCustomerOrderId(999).collectList())
+            .expectNextMatches(List::isEmpty)
+            .verifyComplete();
     }
 }

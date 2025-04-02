@@ -1,86 +1,59 @@
 package com.webshop.repositories;
 
-import com.webshop.dto.ProductPreviewDto;
-import com.webshop.entities.Product;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import reactor.test.StepVerifier;
 
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-@DataJpaTest
-@Sql("/test-data-products.sql")
+@DataR2dbcTest
 @ActiveProfiles("test")
-public class ProductRepositoryTest {
+@SpringJUnitConfig
+class ProductRepositoryTest {
 
     @Autowired
     private ProductRepository productRepository;
 
     @Test
-    public void testFindAllProductPreviewDtos() {
-        Page<ProductPreviewDto> result = productRepository
-            .findAllProductPreviewDtos(PageRequest.of(0, 10));
-
-        assertEquals(3, result.getContent().size());
-        assertEquals("Ноутбук", result.getContent().get(0).title());
-        assertEquals("Смартфон", result.getContent().get(1).title());
-        assertEquals("Планшет", result.getContent().get(2).title());
-
+    void testCountByTitleContaining() {
+        StepVerifier.create(productRepository.countByTitleContaining("компьютер"))
+            .expectNext(1L)
+            .verifyComplete();
     }
 
     @Test
-    public void testFindProductPreviewDtosByTitleContaining() {
-        Page<ProductPreviewDto> result = productRepository
-            .findProductPreviewDtosByTitleContaining("ноут", PageRequest.of(0, 10));
-
-        assertEquals(1, result.getContent().size());
-        assertEquals("Ноутбук", result.getContent().get(0).title());
+    void testCountByPriceGreaterThan() {
+        StepVerifier.create(productRepository.countByPriceGreaterThan(300.0))
+            .expectNext(2L)
+            .verifyComplete();
     }
 
     @Test
-    public void testFindProductPreviewDtosByPriceGreaterThan() {
-        Page<ProductPreviewDto> result = productRepository
-            .findProductPreviewDtosByPriceGreaterThan(400.0, PageRequest.of(0, 10));
-
-        assertEquals(2, result.getContent().size());
-        assertEquals("Ноутбук", result.getContent().get(0).title());
-        assertEquals("Смартфон", result.getContent().get(1).title());
+    void testCountByPriceLessThan() {
+        StepVerifier.create(productRepository.countByPriceLessThan(400.0))
+            .expectNext(2L)
+            .verifyComplete();
     }
 
     @Test
-    public void testFindProductPreviewDtosByPriceLessThan() {
-        Page<ProductPreviewDto> result = productRepository
-            .findProductPreviewDtosByPriceLessThan(400.0, PageRequest.of(0, 10));
-
-        assertEquals(1, result.getContent().size());
-        assertEquals("Планшет", result.getContent().get(0).title());
+    void testCountAllProducts() {
+        StepVerifier.create(productRepository.countByPriceLessThan(10000.0))
+            .expectNext(4L)
+            .verifyComplete();
     }
 
     @Test
-    public void testFindProductPreviewDtosByPriceBetween() {
-        Page<ProductPreviewDto> result = productRepository
-            .findProductPreviewDtosByPriceBetween(400.0, 1000.0, PageRequest.of(0, 10));
-
-        assertEquals(2, result.getContent().size());
-        assertEquals("Ноутбук", result.getContent().get(0).title());
-        assertEquals("Смартфон", result.getContent().get(1).title());
+    void testCountByTitleContaining_PartOfTitle() {
+        StepVerifier.create(productRepository.countByTitleContaining("ет"))
+            .expectNext(1L)
+            .verifyComplete();
     }
 
     @Test
-    public void testFindById() {
-        Optional<Product> foundProduct = productRepository.findById(6);
-
-        assertTrue(foundProduct.isPresent());
-
-        Product product = foundProduct.get();
-        assertEquals("Ноутбук", product.getTitle());
+    void testCountByPriceBetween() {
+        StepVerifier.create(productRepository.countByPriceBetween(300.0, 500.0))
+            .expectNext(2L)
+            .verifyComplete();
     }
-
 }

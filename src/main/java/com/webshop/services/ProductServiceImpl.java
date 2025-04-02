@@ -102,7 +102,8 @@ public class ProductServiceImpl implements ProductService {
         return Mono.justOrEmpty(productInputDto.image())
             .flatMap(image -> {
                 if (!ImageUtils.isValidImageExtension(image.filename()))
-                    return Mono.error(new WrongImageTypeException("Недопустимый формат изображения, разрешены: jpeg, jpg, png."));
+                    return Mono.error(
+                        new WrongImageTypeException("Недопустимый формат изображения, разрешены: jpeg, jpg, png."));
                 if (!ImageUtils.isValidImageSize(image.headers().getContentLength()))
                     return Mono.error(new MaxImageSizeExceededException("Размер файла не должен превышать 3 МБ."));
                 String uniqueFileName = ImageUtils.generateUniqueImageName(image.filename());
@@ -111,7 +112,6 @@ public class ProductServiceImpl implements ProductService {
             })
             .onErrorResume(e -> {
                 if (e instanceof WrongImageTypeException || e instanceof MaxImageSizeExceededException) {
-                    log.warn("Image validation failed, using default image: {}", e.getMessage());
                     return Mono.just("noimage.png");
                 }
                 return Mono.error(e);

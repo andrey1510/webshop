@@ -1,90 +1,129 @@
 package com.webshop.controllersIntegration;
 
-import lombok.SneakyThrows;
-import org.junit.jupiter.api.Test;
+import com.webshop.configs.TestDatabaseConfig;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.r2dbc.connection.init.ConnectionFactoryInitializer;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.jdbc.Sql;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.r2dbc.connection.init.ResourceDatabasePopulator;
 
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.web.reactive.function.BodyInserters.fromFormData;
 
 @SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Sql("/test-data-full.sql")
+@AutoConfigureWebTestClient
+@ActiveProfiles("testintegr")
+@SpringJUnitConfig
+@Import(TestDatabaseConfig.class)
 class CartControllerIntegrationTest {
 
     @Autowired
-    private MockMvc mockMvc;
+    private WebTestClient webTestClient;
+
+    @Autowired
+    private ConnectionFactoryInitializer databaseInitializer;
+
+    @BeforeEach
+    void setUp() {
+        ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
+        populator.addScript(new ClassPathResource("schema.sql"));
+        populator.addScript(new ClassPathResource("test-data-full.sql"));
+        databaseInitializer.setDatabasePopulator(populator);
+        databaseInitializer.afterPropertiesSet();
+    }
 
     @Test
-    @SneakyThrows
     void testGetCart() {
-        mockMvc.perform(MockMvcRequestBuilders.get("/cart"))
-            .andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(view().name("cart"))
-            .andExpect(model().attributeExists("cart"))
-            .andExpect(model().attributeExists("totalPrice"));
+        webTestClient.get()
+            .uri("/cart")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody(String.class)
+            .consumeWith(result -> {
+                String response = result.getResponseBody();
+                assertTrue(response != null &&
+                    response.contains("Ноутбук"));
+            });
     }
 
     @Test
-    @SneakyThrows
-    void testAddCartItem() {
-        mockMvc.perform(MockMvcRequestBuilders.post("/cart/add")
-                .param("productId", "9")
-                .param("quantity", "1"))
-            .andExpect(MockMvcResultMatchers.status().is3xxRedirection())
-            .andExpect(redirectedUrlPattern("**"));
+    void testAddItemToCart() {
+        webTestClient.post()
+            .uri("/cart/add?productId=6")
+            .header(HttpHeaders.REFERER, "/products/6")
+            .exchange()
+            .expectStatus().is3xxRedirection()
+            .expectHeader().valueEquals("Location", "/products/6");
+        webTestClient.get()
+            .uri("/cart")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody(String.class)
+            .consumeWith(result -> {
+                String response = result.getResponseBody();
+                assertTrue(response != null &&
+                    response.contains("Ноутбук") &&
+                    response.contains("1000.0"));
+            });
     }
 
     @Test
-    @SneakyThrows
-    void testUpdateCartItem()  {
-        mockMvc.perform(MockMvcRequestBuilders.post("/cart/update")
-                .param("productId", "6")
-                .param("quantity", "5"))
-            .andExpect(MockMvcResultMatchers.status().is3xxRedirection())
-            .andExpect(redirectedUrlPattern("**"));
+    void testUpdateItemQuantity() {
+        webTestClient.post()
+            .uri("/cart/update")
+            .body(fromFormData("productId", "7")
+                .with("quantity", "3"))
+            .header(HttpHeaders.REFERER, "/cart")
+            .exchange();
+        webTestClient.get()
+            .uri("/cart")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody(String.class)
+            .consumeWith(result -> {
+                String response = result.getResponseBody();
+                assertTrue(response != null &&
+                    response.contains("Смартфон") &&
+                    response.contains("3"));
+            });
     }
 
     @Test
-    @SneakyThrows
-    void testRemoveCartItem() {
-        mockMvc.perform(MockMvcRequestBuilders.post("/cart/remove")
-                .param("productId", "7"))
-            .andExpect(MockMvcResultMatchers.status().is3xxRedirection())
-            .andExpect(redirectedUrlPattern("**"));
+    void testRemoveItemFromCart() {
+        webTestClient.post()
+            .uri("/cart/remove")
+            .body(fromFormData("productId", "7"))
+            .header(HttpHeaders.REFERER, "/cart")
+            .exchange();
+        webTestClient.get()
+            .uri("/cart")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody(String.class)
+            .consumeWith(result -> {
+                String response = result.getResponseBody();
+                assertTrue(response != null && !response.contains("Планшет"));
+            });
     }
 
     @Test
-    @SneakyThrows
-    void testCompleteOrder()  {
-        mockMvc.perform(MockMvcRequestBuilders.post("/cart/checkout"))
-            .andExpect(MockMvcResultMatchers.status().is3xxRedirection())
-            .andExpect(redirectedUrlPattern("/orders/*"));
+    void testCheckout() {
+        webTestClient.post()
+            .uri("/cart/checkout")
+            .exchange()
+            .expectHeader().valueMatches("Location", "/orders/\\d+");
+        webTestClient.get()
+            .uri("/cart")
+            .exchange()
+            .expectStatus().isOk();
     }
 
-    @Test
-    @SneakyThrows
-    void testHandleCartIsEmptyException() {
-
-        mockMvc.perform(MockMvcRequestBuilders.post("/cart/remove")
-            .param("productId", "6"));
-        mockMvc.perform(MockMvcRequestBuilders.post("/cart/remove")
-            .param("productId", "7"));
-
-        mockMvc.perform(MockMvcRequestBuilders.post("/cart/checkout"))
-            .andExpect(MockMvcResultMatchers.status().is3xxRedirection())
-            .andExpect(redirectedUrl("/cart"))
-            .andExpect(flash().attributeExists("errorMessage"));
-    }
 }

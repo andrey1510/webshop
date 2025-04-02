@@ -4,7 +4,7 @@ __README__
 Данное приложение представляет собой онлайн-магазин с возможностями просмотра выбора и заказа товаров, 
 а также просмотра статистика заказов.
 
-Использованный стек: Java SE 21, Spring Boot, JPA, Gradle, Lombok, Thymeleaf, H2, JUnit 5, Mockito.
+Использованный стек: Java SE 21, Spring Boot, WebFlux, r2dbc, Gradle, Lombok, Thymeleaf, H2, JUnit 5, Mockito.
 
 Установка и запуск:
 -----------------------------------
@@ -16,9 +16,9 @@ __README__
 Должен быть установлен Docker. Запустите файл **docker-compose.yml** в IDE, или в директории ```webshop``` 
 склонированного репозитория откройте командную строку и выполните команды:
 
-```docker-compose build```
+```docker compose build```
 
-```docker-compose up -d```
+```docker compose up -d```
 
 В результате будет создан контейнер с приложением.
 
