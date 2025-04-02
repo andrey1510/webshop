@@ -1,27 +1,30 @@
 package com.webshop.controllers;
 
 import com.webshop.dto.ProductPreviewDto;
-import com.webshop.entities.CustomerOrder;
 import com.webshop.entities.OrderItem;
 import com.webshop.entities.Product;
 import com.webshop.exceptions.ProductNotFoundException;
 import com.webshop.services.CartService;
 import com.webshop.services.ProductService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/products")
@@ -31,51 +34,87 @@ public class ProductController {
     private final CartService cartService;
 
     @GetMapping("/{id}")
-    public String getProduct(@PathVariable("id") Integer productId, Model model) {
-        Product product = productService.getProductById(productId);
-        model.addAttribute("product", product);
+    public Mono<String> getProduct(
+        @PathVariable("id") Integer productId,
+        ServerWebExchange exchange) {
 
-        CustomerOrder cart = cartService.getCurrentCart();
-        OrderItem cartItem = cartService.findCartItemByProductId(cart, productId);
-        model.addAttribute("cartProductQuantity", cartItem != null ? cartItem.getQuantity() : 0);
+        Mono<Product> productMono = productService.getProductById(productId)
+            .onErrorResume(ProductNotFoundException.class, e -> {
+                exchange.getAttributes().put("errorMessage", e.getMessage());
+                return Mono.empty();
+            });
 
-        return "product";
+        Mono<Integer> cartQuantityMono = cartService.getCurrentCartNoProducts()
+            .flatMap(cart -> cartService.findCartItemByProductId(cart, productId))
+            .map(OrderItem::getQuantity)
+            .defaultIfEmpty(0);
+
+        return Mono.zip(productMono, cartQuantityMono)
+            .flatMap(tuple -> {
+                Product product = tuple.getT1();
+                Integer quantity = tuple.getT2();
+
+                exchange.getAttributes().put("product", product);
+                exchange.getAttributes().put("cartProductQuantity", quantity);
+                return Mono.just("product");
+            })
+            .switchIfEmpty(Mono.just("product"));
     }
 
     @GetMapping
-    public String getProducts(
+    public Mono<String> getProducts(
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "100") int size,
         @RequestParam(required = false) String title,
         @RequestParam(required = false) Double minPrice,
         @RequestParam(required = false) Double maxPrice,
         @RequestParam(defaultValue = "asc") String sort,
-        Model model) {
+        ServerWebExchange exchange) {
 
-        Page<ProductPreviewDto> products = productService.getProductPreviewDtos(title, minPrice, maxPrice, sort, page, size);
+        Mono<Page<ProductPreviewDto>> productsPageMono = productService.getPageableProductPreviewDtos(
+                title, minPrice, maxPrice, sort, page, size)
+            .doOnError(e -> log.error("Error loading products", e));
 
-        Map<Integer, Integer> cartProductsQuantities = cartService.getCartProductsQuantity();
+        Mono<Map<Integer, Integer>> cartQuantitiesMono = cartService.getCartProductsQuantity()
+            .doOnNext(quantities -> log.info("Cart quantities: {}", quantities))
+            .doOnError(e -> log.error("Error loading cart quantities", e))
+            .defaultIfEmpty(Collections.emptyMap());
 
-        model.addAttribute("products", products);
-        model.addAttribute("currentPage", page);
-        model.addAttribute("pageSize", size);
-        model.addAttribute("totalPages", products.getTotalPages());
-        model.addAttribute("title", title);
-        model.addAttribute("minPrice", minPrice);
-        model.addAttribute("maxPrice", maxPrice);
-        model.addAttribute("sort", sort);
-        model.addAttribute("cartProductsQuantities", cartProductsQuantities);
+        return Mono.zip(productsPageMono, cartQuantitiesMono)
+            .flatMap(tuple -> {
+                Page<ProductPreviewDto> productsPage = tuple.getT1();
+                Map<Integer, Integer> cartQuantities = tuple.getT2();
 
-        return "products";
+                Map<String, Object> model = new HashMap<>();
+                model.put("products", productsPage.getContent());
+                model.put("productsPage", productsPage);
+                model.put("currentPage", page);
+                model.put("pageSize", size);
+                model.put("sort", sort);
+                model.put("cartProductsQuantities", cartQuantities);
+
+                if (title != null) model.put("title", title);
+                if (minPrice != null) model.put("minPrice", minPrice);
+                if (maxPrice != null) model.put("maxPrice", maxPrice);
+
+                exchange.getAttributes().clear();
+                model.forEach((key, value) -> {
+                    if (value != null) {
+                        exchange.getAttributes().put(key, value);
+                    }
+                });
+
+                return Mono.just("products");
+            });
     }
-
 
     @ExceptionHandler(ProductNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ModelAndView handleProductNotFoundException(ProductNotFoundException ex) {
-        ModelAndView modelAndView = new ModelAndView("product");
-        modelAndView.addObject("errorMessage", ex.getMessage());
-        modelAndView.addObject("product", null);
-        return modelAndView;
+    public Mono<String> handleProductNotFoundException(
+        ProductNotFoundException ex,
+        ServerWebExchange exchange) {
+        exchange.getAttributes().put("errorMessage", ex.getMessage());
+        exchange.getAttributes().put("product", null);
+        return Mono.just("product");
     }
 }

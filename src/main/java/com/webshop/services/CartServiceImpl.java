@@ -3,149 +3,154 @@ package com.webshop.services;
 import com.webshop.entities.CustomerOrder;
 import com.webshop.entities.OrderItem;
 import com.webshop.entities.OrderStatus;
-import com.webshop.entities.Product;
 import com.webshop.exceptions.AlreadyInCartException;
 import com.webshop.exceptions.CartIsEmptyException;
 import com.webshop.exceptions.ItemIsNotInCartException;
 import com.webshop.exceptions.WrongQuantityException;
 import com.webshop.repositories.CustomerOrderRepository;
+import com.webshop.repositories.OrderItemProductRepository;
 import com.webshop.repositories.OrderItemRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Map;
-import java.util.stream.Collectors;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class CartServiceImpl implements CartService{
 
     private final CustomerOrderRepository customerOrderRepository;
     private final OrderItemRepository orderItemRepository;
+    private final OrderItemProductRepository orderItemProductRepository;
 
     private final ProductService productService;
 
     @Override
-    @Transactional
-    public CustomerOrder getCurrentCart() {
+    public Mono<CustomerOrder> getCurrentCartWithProducts() {
         return customerOrderRepository.findByStatus(OrderStatus.CART)
-            .orElseGet(this::createNewCart);
+            .switchIfEmpty(createNewCart())
+            .flatMap(order ->
+                orderItemProductRepository.findByCustomerOrderIdWithProduct(order.getId())
+                    .collectList()
+                    .doOnNext(order::setItems)
+                    .thenReturn(order)
+            );
     }
 
-    @Transactional
     @Override
-    public Map<Integer, Integer> getCartProductsQuantity() {
-        CustomerOrder orderInCart = getCurrentCart();
-        return orderInCart.getItems().stream()
-            .collect(Collectors.toMap(
-                item -> item.getProduct().getId(),
+    public Mono<CustomerOrder> getCurrentCartNoProducts() {
+        return customerOrderRepository.findByStatus(OrderStatus.CART)
+            .switchIfEmpty(createNewCart())
+            .flatMap(order -> orderItemRepository.findByCustomerOrderId(order.getId())
+                .collectList()
+                .doOnNext(items -> order.setItems(items != null ? items : new ArrayList<>()))
+                .thenReturn(order));
+    }
+
+    public Mono<Map<Integer, Integer>> getCartProductsQuantity() {
+        return getCurrentCartWithProducts()
+            .flatMapMany(order -> Flux.fromIterable(order.getItems() != null ? order.getItems() : Collections.emptyList()))
+            .filter(item -> item.getProductId() != null)
+            .collectMap(
+                OrderItem::getProductId,
                 OrderItem::getQuantity
-            ));
+            )
+            .defaultIfEmpty(Collections.emptyMap());
     }
 
     @Override
-    @Transactional
-    public CustomerOrder createNewCart() {
+    public Mono<CustomerOrder> createNewCart() {
         CustomerOrder orderInCart = new CustomerOrder();
         orderInCart.setStatus(OrderStatus.CART);
         orderInCart.setItems(new ArrayList<>());
         return customerOrderRepository.save(orderInCart);
     }
 
-    @Transactional
     @Override
-    public CustomerOrder completeOrder() {
+    public Mono<CustomerOrder> completeOrder() {
+        return getCurrentCartWithProducts()
+            .flatMap(orderInCart -> {
+                if (orderInCart.getItems().isEmpty()) return Mono.error(new CartIsEmptyException("Корзина пустая."));
 
-        CustomerOrder orderInCart = getCurrentCart();
+                orderInCart.setStatus(OrderStatus.COMPLETED);
+                orderInCart.setTimestamp(LocalDateTime.now());
+                orderInCart.setCompletedOrderPrice(orderInCart.getItems().stream()
+                    .mapToDouble(item -> item.getProduct().getPrice() * item.getQuantity())
+                    .sum());
 
-        if (orderInCart.getItems().isEmpty()) throw new CartIsEmptyException("Корзина пустая.");
-
-        orderInCart.setStatus(OrderStatus.COMPLETED);
-        orderInCart.setTimestamp(LocalDateTime.now());
-        orderInCart.setCompletedOrderPrice(calculateTotalPrice(orderInCart));
-
-        customerOrderRepository.save(orderInCart);
-
-        createNewCart();
-
-        return orderInCart;
+                return customerOrderRepository.save(orderInCart)
+                    .then(createNewCart())
+                    .thenReturn(orderInCart);
+            });
     }
 
     @Override
-    public Double calculateTotalPrice(CustomerOrder orderInCart) {
-        return orderInCart.getItems().stream()
-            .mapToDouble(item -> item.getProduct().getPrice() * item.getQuantity())
-            .sum();
+    public Mono<Void> addItemToCart(Integer productId, Integer quantity) {
+
+        if (quantity <= 0) return Mono.error(new WrongQuantityException("Количество должно быть больше 0"));
+
+        return getCurrentCartNoProducts()
+            .flatMap(order -> findCartItemByProductId(order, productId)
+                .flatMap(item -> Mono.error(new AlreadyInCartException("Товар уже в корзине")))
+                .switchIfEmpty(productService.getProductById(productId)
+                    .flatMap(product -> {
+                        OrderItem newItem = OrderItem.builder()
+                            .customerOrderId(order.getId())
+                            .productId(product.getId())
+                            .quantity(quantity)
+                            .build();
+                        log.info("Saving new order item: {}", newItem);
+                        return orderItemRepository.save(newItem)
+                            .doOnNext(savedItem -> log.info("Saved order item: {}", savedItem))
+                            .then(customerOrderRepository.save(order))
+                            .doOnNext(savedOrder -> log.info("Updated cart: {}", savedOrder));
+                    })
+                )
+            )
+            .then()
+            .doOnError(e -> log.error("Failed to add item to cart: {}", e.getMessage(), e));
     }
 
-    @Transactional
     @Override
-    public void addItemToCart(Integer productId, Integer quantity) {
+    public Mono<Void> updateItemQuantity(Integer productId, Integer quantity) {
 
-        if (quantity <= 0) throw new WrongQuantityException("Количество должно быть больше 0");
+        if (quantity <= 0) return Mono.error(new WrongQuantityException("Количество должно быть больше 0"));
 
-        CustomerOrder orderInCart = getCurrentCart();
-
-        if (findCartItemByProductId(orderInCart, productId) != null)
-            throw new AlreadyInCartException("Товар уже добавлен в корзину.");
-
-        Product product = productService.getProductById(productId);
-
-        OrderItem newItem = OrderItem.builder()
-            .customerOrder(orderInCart)
-            .product(product)
-            .quantity(quantity)
-            .build();
-        orderItemRepository.save(newItem);
-
-        orderInCart.getItems().add(newItem);
-
-        customerOrderRepository.save(orderInCart);
+        return getCurrentCartNoProducts()
+            .flatMap(order -> findCartItemByProductId(order, productId))
+            .switchIfEmpty(Mono.defer(() -> Mono.error(new ItemIsNotInCartException("Товар не найден в корзине."))))
+            .flatMap(item -> {
+                item.setQuantity(quantity);
+                return orderItemRepository.save(item)
+                    .doOnError(e -> log.error("Failed to update item quantity", e))
+                    .then();
+            });
     }
 
-    @Transactional
     @Override
-    public void updateItemQuantity(Integer productId, Integer quantity) {
-
-        if (quantity <= 0) throw new WrongQuantityException("Количество должно быть больше 0");
-
-        CustomerOrder orderInCart = getCurrentCart();
-
-        OrderItem existingItem = findCartItemByProductId(orderInCart, productId);
-
-        if (existingItem == null) throw new ItemIsNotInCartException("Товар не найден в корзине.");
-
-        existingItem.setQuantity(quantity);
-        customerOrderRepository.save(orderInCart);
+    public Mono<Void> removeCartItem(Integer productId) {
+        return getCurrentCartNoProducts()
+            .flatMap(orderInCart -> findCartItemByProductId(orderInCart, productId)
+                .flatMap(existingItem -> {
+                    orderInCart.getItems().remove(existingItem);
+                    return orderItemRepository.delete(existingItem)
+                        .then(customerOrderRepository.save(orderInCart));
+                }))
+            .then();
     }
 
-    @Transactional
     @Override
-    public void removeCartItem(Integer productId) {
-        CustomerOrder orderInCart = getCurrentCart();
-
-        OrderItem existingItem = findCartItemByProductId(orderInCart, productId);
-
-        if (existingItem != null) {
-            orderInCart.getItems().remove(existingItem);
-            orderItemRepository.delete(existingItem);
-        }
-
-        customerOrderRepository.save(orderInCart);
+    public Mono<OrderItem> findCartItemByProductId(CustomerOrder orderInCart, Integer productId) {
+        return Flux.fromIterable(orderInCart.getItems() != null ? orderInCart.getItems() : Collections.emptyList())
+            .filter(item -> item.getProductId() != null && item.getProductId().equals(productId))
+            .next();
     }
-
-    @Transactional
-    @Override
-    public OrderItem findCartItemByProductId(CustomerOrder orderInCart, Integer productId) {
-        return orderInCart.getItems().stream()
-            .filter(item -> item.getProduct().getId().equals(productId))
-            .findFirst()
-            .orElse(null);
-    }
-
-
 }
 

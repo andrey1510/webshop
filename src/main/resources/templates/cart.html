@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head>
+    <meta charset="UTF-8">
     <title>Корзина</title>
     <style>
         body {
@@ -15,7 +16,6 @@
             flex-direction: column;
             gap: 10px;
         }
-
         .button-container button {
             width: 150px;
             padding: 10px 15px;
@@ -25,7 +25,6 @@
             cursor: pointer;
             text-align: center;
         }
-
         .button-container button:hover {
             background-color: #45a049;
         }
@@ -35,30 +34,67 @@
             padding: 10px;
             border-radius: 4px;
             margin-bottom: 20px;
-            position: relative; /
+            position: relative;
         }
         table {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
         }
-
         th {
             background-color: #f2f2f2;
             padding: 12px;
             text-align: left;
             font-weight: bold;
         }
-
         td {
             padding: 12px;
             border-bottom: 2px solid #ddd;
         }
-
         table, th, td {
             border: none;
         }
+        .cart-controls button {
+            margin: 0 5px;
+            cursor: pointer;
+        }
     </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Обработчик для изменения количества
+            document.querySelectorAll('.update-quantity-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const productId = this.getAttribute('data-product-id');
+                    const quantity = this.getAttribute('data-quantity');
+                    fetch('/cart/update?productId=' + productId + '&quantity=' + quantity, {
+                        method: 'POST'
+                    })
+                        .then(response => {
+                            if (response.redirected) {
+                                window.location.href = response.url;
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                });
+            });
+
+            // Обработчик для удаления из корзины
+            document.querySelectorAll('.remove-from-cart-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const productId = this.getAttribute('data-product-id');
+                    fetch('/cart/remove?productId=' + productId, {
+                        method: 'POST'
+                    })
+                        .then(response => {
+                            if (response.redirected) {
+                                window.location.href = response.url;
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                });
+            });
+        });
+    </script>
 </head>
 <body>
 <h1>Корзина</h1>
@@ -74,16 +110,13 @@
 </div>
 
 <!-- Товары в корзине -->
-
-<div class = "cart-container">
-
+<div class="cart-container">
     <!-- Если заказ не найден -->
     <div th:if="${errorMessage != null}" class="error-message">
         <p th:text="${errorMessage}">Корзина пустая.</p>
     </div>
 
     <table style="width:70%; margin: 20px auto;">
-
         <tr>
             <th>Название</th>
             <th>Цена</th>
@@ -96,37 +129,38 @@
             <td th:text="${item.product.title}">Название</td>
             <td th:text="${item.product.price} + ' ₽'">Цена</td>
             <td>
-                <form th:action="@{/cart/update}" method="post">
-                    <input type="hidden" name="productId" th:value="${item.product.id}">
-                    <button type="submit" name="quantity" th:value="${item.quantity - 1}"
-                            th:disabled="${item.quantity <= 1}">-</button>
-                    <span th:text="${item.quantity}">1</span>
-                    <button type="submit" name="quantity" th:value="${item.quantity + 1}">+</button>
-                </form>
+                <button type="button"
+                        th:disabled="${item.quantity <= 1}"
+                        th:attr="data-product-id=${item.product.id},data-quantity=${item.quantity - 1}"
+                        class="update-quantity-btn">
+                    -
+                </button>
+                <span th:text="${item.quantity}">1</span>
+                <button type="button"
+                        th:attr="data-product-id=${item.product.id},data-quantity=${item.quantity + 1}"
+                        class="update-quantity-btn">
+                    +
+                </button>
             </td>
             <td th:text="${item.product.price * item.quantity} + ' ₽'">Общая цена</td>
             <td>
-                <form th:action="@{/cart/remove}" method="post">
-                    <input type="hidden" name="productId" th:value="${item.product.id}">
-                    <button type="submit" style="background: #ff4444; color: white; border: none; border-radius: 4px; padding: 5px 10px;">
-                        Удалить &times;
-                    </button>
-                </form>
+                <button type="button"
+                        style="background: #ff4444; color: white; border: none; border-radius: 4px; padding: 5px 10px;"
+                        th:attr="data-product-id=${item.product.id}"
+                        class="remove-from-cart-btn">
+                    Удалить &times;
+                </button>
             </td>
         </tr>
-
     </table>
 
-
     <!-- Общая стоимость корзины -->
-
     <h2>Общая стоимость корзины: <span th:text="${totalPrice} + ' ₽'">0.00</span></h2>
 
     <!-- Оформление заказа -->
     <form th:action="@{/cart/checkout}" method="post">
         <button type="submit">Оформить заказ</button>
     </form>
-
 </div>
 </body>
 </html>

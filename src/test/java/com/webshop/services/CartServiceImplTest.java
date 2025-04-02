@@ -4,11 +4,9 @@ import com.webshop.entities.CustomerOrder;
 import com.webshop.entities.OrderItem;
 import com.webshop.entities.OrderStatus;
 import com.webshop.entities.Product;
-import com.webshop.exceptions.AlreadyInCartException;
-import com.webshop.exceptions.CartIsEmptyException;
-import com.webshop.exceptions.ItemIsNotInCartException;
 import com.webshop.exceptions.WrongQuantityException;
 import com.webshop.repositories.CustomerOrderRepository;
+import com.webshop.repositories.OrderItemProductRepository;
 import com.webshop.repositories.OrderItemRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,23 +14,22 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class CartServiceImplTest {
+class CartServiceImplTest {
 
     @Mock
     private CustomerOrderRepository customerOrderRepository;
@@ -41,249 +38,203 @@ public class CartServiceImplTest {
     private OrderItemRepository orderItemRepository;
 
     @Mock
+    private OrderItemProductRepository orderItemProductRepository;
+
+    @Mock
     private ProductService productService;
 
     @InjectMocks
     private CartServiceImpl cartService;
 
-    private CustomerOrder orderInCart;
-    private Product product;
-    private OrderItem orderItem;
+    private CustomerOrder cartOrder;
+    private CustomerOrder completedOrder;
+    private OrderItem cartItem1;
+    private OrderItem cartItem2;
+    private Product product1;
+    private Product product2;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
+        cartOrder = CustomerOrder.builder()
+            .id(1)
+            .status(OrderStatus.CART)
+            .items(new ArrayList<>())
+            .build();
+        completedOrder = CustomerOrder.builder()
+            .id(2)
+            .status(OrderStatus.COMPLETED)
+            .timestamp(LocalDateTime.now())
+            .completedOrderPrice(300.0)
+            .items(new ArrayList<>())
+            .build();
+        product1 = Product.builder()
+            .id(1)
+            .price(100.0)
+            .build();
+        product2 = Product.builder()
+            .id(2)
+            .price(200.0)
+            .build();
+        cartItem1 = OrderItem.builder()
+            .id(1)
+            .customerOrderId(1)
+            .productId(1)
+            .quantity(1)
+            .product(product1)
+            .build();
+        cartItem2 = OrderItem.builder()
+            .id(2)
+            .customerOrderId(1)
+            .productId(2)
+            .quantity(2)
+            .product(product2)
+            .build();
+        cartOrder.getItems().add(cartItem1);
+        cartOrder.getItems().add(cartItem2);
+    }
 
-        orderInCart = CustomerOrder.builder()
+    @Test
+    void testGetCurrentCartWithProducts() {
+        when(customerOrderRepository.findByStatus(OrderStatus.CART))
+            .thenReturn(Mono.empty());
+        when(customerOrderRepository.save(any(CustomerOrder.class)))
+            .thenReturn(Mono.just(cartOrder));
+        when(orderItemProductRepository.findByCustomerOrderIdWithProduct(1))
+            .thenReturn(Flux.empty());
+
+        StepVerifier.create(cartService.getCurrentCartWithProducts())
+            .expectNextMatches(order -> {
+                assertEquals(OrderStatus.CART, order.getStatus());
+                assertTrue(order.getItems().isEmpty());
+                return true;
+            })
+            .verifyComplete();
+    }
+
+    @Test
+    void testGetCurrentCartWithProducts_CreateNewCart() {
+
+        CustomerOrder newCart = CustomerOrder.builder()
+            .id(3)
             .status(OrderStatus.CART)
             .items(new ArrayList<>())
             .build();
 
-        product = Product.builder()
-            .id(1)
-            .price(100.0)
+        when(customerOrderRepository.findByStatus(OrderStatus.CART))
+            .thenReturn(Mono.empty());
+        when(customerOrderRepository.save(any(CustomerOrder.class)))
+            .thenReturn(Mono.just(newCart));
+        when(orderItemProductRepository.findByCustomerOrderIdWithProduct(3))
+            .thenReturn(Flux.empty());
+
+        StepVerifier.create(cartService.getCurrentCartWithProducts())
+            .expectNextMatches(order -> {
+                assertEquals(OrderStatus.CART, order.getStatus());
+                assertTrue(order.getItems().isEmpty());
+                return true;
+            })
+            .verifyComplete();
+
+        verify(customerOrderRepository).findByStatus(OrderStatus.CART);
+        verify(customerOrderRepository).save(any(CustomerOrder.class));
+    }
+
+    @Test
+    void testCreateNewCart() {
+        CustomerOrder newCart = new CustomerOrder();
+        newCart.setStatus(OrderStatus.CART);
+        newCart.setItems(new ArrayList<>());
+
+        when(customerOrderRepository.save(any(CustomerOrder.class)))
+            .thenReturn(Mono.just(newCart));
+
+        StepVerifier.create(cartService.createNewCart())
+            .expectNextMatches(order -> {
+                assertEquals(OrderStatus.CART, order.getStatus());
+                assertTrue(order.getItems().isEmpty());
+                return true;
+            })
+            .verifyComplete();
+    }
+
+    @Test
+    void testCompleteOrder() {
+        when(customerOrderRepository.findByStatus(OrderStatus.CART))
+            .thenReturn(Mono.just(cartOrder));
+        when(orderItemProductRepository.findByCustomerOrderIdWithProduct(1))
+            .thenReturn(Flux.just(cartItem1, cartItem2));
+        when(customerOrderRepository.save(any(CustomerOrder.class)))
+            .thenReturn(Mono.just(completedOrder));
+
+        StepVerifier.create(cartService.completeOrder())
+            .expectNextMatches(order -> {
+                assertEquals(OrderStatus.COMPLETED, order.getStatus());
+                assertNotNull(order.getTimestamp());
+                assertEquals(500.0, order.getCompletedOrderPrice());
+                return true;
+            })
+            .verifyComplete();
+    }
+
+    @Test
+    void testAddItemToCart() {
+
+        Product newProduct = Product.builder().id(3).price(150.0).build();
+        OrderItem newItem = OrderItem.builder()
+            .id(3)
+            .customerOrderId(1)
+            .productId(3)
+            .quantity(1)
+            .product(newProduct)
             .build();
 
-        orderItem = OrderItem.builder()
-            .product(product)
-            .quantity(2)
-            .customerOrder(orderInCart)
-            .build();
+        when(customerOrderRepository.findByStatus(OrderStatus.CART))
+            .thenReturn(Mono.just(cartOrder));
+        when(productService.getProductById(3))
+            .thenReturn(Mono.just(newProduct));
+        when(orderItemRepository.save(any(OrderItem.class)))
+            .thenReturn(Mono.just(newItem));
+        when(orderItemRepository.findByCustomerOrderId(1))
+            .thenReturn(Flux.just(cartItem1, cartItem2));
+        when(customerOrderRepository.save(any(CustomerOrder.class)))
+            .thenReturn(Mono.just(cartOrder));
 
+        StepVerifier.create(cartService.addItemToCart(3, 1))
+            .verifyComplete();
+
+        verify(orderItemRepository).save(any(OrderItem.class));
     }
 
     @Test
-    public void testGetCurrentCart_ExistingCart() {
+    void testUpdateItemQuantity_WithInvalidQuantity() {
+        StepVerifier.create(cartService.updateItemQuantity(1, 0))
+            .expectError(WrongQuantityException.class)
+            .verify();
+    }
+
+    @Test
+    void testRemoveCartItem() {
 
         when(customerOrderRepository.findByStatus(OrderStatus.CART))
-            .thenReturn(Optional.of(orderInCart));
+            .thenReturn(Mono.just(cartOrder));
+        when(orderItemRepository.findByCustomerOrderId(1))
+            .thenReturn(Flux.just(cartItem1, cartItem2));
+        when(orderItemRepository.delete(any(OrderItem.class)))
+            .thenReturn(Mono.empty());
+        when(customerOrderRepository.save(any(CustomerOrder.class)))
+            .thenReturn(Mono.just(cartOrder));
 
-        CustomerOrder result = cartService.getCurrentCart();
+        StepVerifier.create(cartService.removeCartItem(1))
+            .verifyComplete();
 
-        assertNotNull(result);
-        assertEquals(OrderStatus.CART, result.getStatus());
-
-        verify(customerOrderRepository, times(1)).findByStatus(OrderStatus.CART);
-        verify(customerOrderRepository, never()).save(any());
+        verify(orderItemRepository).delete(argThat(item -> item.getId() == 1));
     }
 
     @Test
-    public void testGetCurrentCart_NewCart() {
-
-        when(customerOrderRepository.findByStatus(OrderStatus.CART))
-            .thenReturn(Optional.empty());
-        when(customerOrderRepository.save(any(CustomerOrder.class))).thenReturn(orderInCart);
-
-        CustomerOrder result = cartService.getCurrentCart();
-
-        assertNotNull(result);
-        assertEquals(OrderStatus.CART, result.getStatus());
-
-        verify(customerOrderRepository, times(1)).findByStatus(OrderStatus.CART);
-        verify(customerOrderRepository, times(1)).save(any(CustomerOrder.class));
-    }
-
-    @Test
-    public void testGetCartProductsQuantity() {
-
-        when(customerOrderRepository.findByStatus(OrderStatus.CART))
-            .thenReturn(Optional.of(orderInCart));
-
-        orderInCart.getItems().add(orderItem);
-
-        Map<Integer, Integer> result = cartService.getCartProductsQuantity();
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals(2, result.get(1));
-
-        verify(customerOrderRepository, times(1)).findByStatus(OrderStatus.CART);
-    }
-
-    @Test
-    public void testCreateNewCart() {
-
-        when(customerOrderRepository.save(any(CustomerOrder.class))).thenReturn(orderInCart);
-
-        CustomerOrder result = cartService.createNewCart();
-
-        assertNotNull(result);
-        assertEquals(OrderStatus.CART, result.getStatus());
-        assertTrue(result.getItems().isEmpty());
-
-        verify(customerOrderRepository, times(1)).save(any(CustomerOrder.class));
-    }
-
-    @Test
-    public void testCompleteOrder_Success() {
-
-        when(customerOrderRepository.findByStatus(OrderStatus.CART))
-            .thenReturn(Optional.of(orderInCart));
-        when(customerOrderRepository.save(any(CustomerOrder.class))).thenReturn(orderInCart);
-
-        orderInCart.getItems().add(orderItem);
-
-        CustomerOrder result = cartService.completeOrder();
-
-        assertNotNull(result);
-        assertEquals(OrderStatus.COMPLETED, result.getStatus());
-        assertEquals(200.0, result.getCompletedOrderPrice());
-
-        verify(customerOrderRepository, times(1)).findByStatus(OrderStatus.CART);
-        verify(customerOrderRepository, times(1)).save(orderInCart);
-    }
-
-    @Test
-    public void testCompleteOrder_EmptyCart() {
-
-        when(customerOrderRepository.findByStatus(OrderStatus.CART))
-            .thenReturn(Optional.of(orderInCart));
-
-        orderInCart.getItems().clear();
-
-        assertThrows(CartIsEmptyException.class, () -> cartService.completeOrder());
-
-        verify(customerOrderRepository, times(1)).findByStatus(OrderStatus.CART);
-        verify(customerOrderRepository, never()).save(any());
-    }
-
-    @Test
-    public void testAddItemToCart_Success() {
-
-        when(customerOrderRepository.findByStatus(OrderStatus.CART))
-            .thenReturn(Optional.of(orderInCart));
-        when(productService.getProductById(1)).thenReturn(product);
-        when(orderItemRepository.save(any(OrderItem.class))).thenReturn(orderItem);
-        when(customerOrderRepository.save(any(CustomerOrder.class))).thenReturn(orderInCart);
-
-        cartService.addItemToCart(1, 2);
-
-        assertEquals(1, orderInCart.getItems().size());
-        assertEquals(1, orderInCart.getItems().get(0).getProduct().getId());
-        assertEquals(2, orderInCart.getItems().get(0).getQuantity());
-
-        verify(customerOrderRepository, times(1)).findByStatus(OrderStatus.CART);
-        verify(productService, times(1)).getProductById(1);
-        verify(orderItemRepository, times(1)).save(any(OrderItem.class));
-        verify(customerOrderRepository, times(1)).save(orderInCart);
-    }
-
-    @Test
-    public void testAddItemToCart_AlreadyInCart() {
-
-        when(customerOrderRepository.findByStatus(OrderStatus.CART))
-            .thenReturn(Optional.of(orderInCart));
-
-        orderInCart.getItems().add(orderItem);
-
-        assertThrows(AlreadyInCartException.class, () -> cartService.addItemToCart(1, 2));
-
-        verify(customerOrderRepository, times(1)).findByStatus(OrderStatus.CART);
-        verify(productService, never()).getProductById(any());
-        verify(orderItemRepository, never()).save(any());
-        verify(customerOrderRepository, never()).save(any());
-    }
-
-    @Test
-    public void testAddItemToCart_InvalidQuantity() {
-
-        assertThrows(WrongQuantityException.class, () -> cartService.addItemToCart(1, 0));
-
-        verify(customerOrderRepository, never()).findByStatus(any());
-        verify(productService, never()).getProductById(any());
-        verify(orderItemRepository, never()).save(any());
-        verify(customerOrderRepository, never()).save(any());
-    }
-
-    @Test
-    public void testUpdateItemQuantity_Success() {
-
-        when(customerOrderRepository.findByStatus(OrderStatus.CART))
-            .thenReturn(Optional.of(orderInCart));
-        when(customerOrderRepository.save(any(CustomerOrder.class))).thenReturn(orderInCart);
-
-        orderInCart.getItems().add(orderItem);
-
-        cartService.updateItemQuantity(1, 3);
-
-        assertEquals(3, orderInCart.getItems().get(0).getQuantity());
-
-        verify(customerOrderRepository, times(1)).findByStatus(OrderStatus.CART);
-        verify(customerOrderRepository, times(1)).save(orderInCart);
-    }
-
-    @Test
-    public void testUpdateItemQuantity_ItemNotFound() {
-
-        when(customerOrderRepository.findByStatus(OrderStatus.CART))
-            .thenReturn(Optional.of(orderInCart));
-
-        assertThrows(ItemIsNotInCartException.class, () -> cartService.updateItemQuantity(1, 3));
-
-        verify(customerOrderRepository, times(1)).findByStatus(OrderStatus.CART);
-        verify(customerOrderRepository, never()).save(any());
-    }
-
-    @Test
-    public void testUpdateItemQuantity_InvalidQuantity() {
-
-        assertThrows(WrongQuantityException.class, () -> cartService.updateItemQuantity(1, 0));
-
-        verify(customerOrderRepository, never()).findByStatus(any());
-        verify(customerOrderRepository, never()).save(any());
-    }
-
-    @Test
-    public void testRemoveCartItem_Success() {
-
-        when(customerOrderRepository.findByStatus(OrderStatus.CART))
-            .thenReturn(Optional.of(orderInCart));
-        when(customerOrderRepository.save(any(CustomerOrder.class))).thenReturn(orderInCart);
-
-        orderInCart.getItems().add(orderItem);
-
-        cartService.removeCartItem(1);
-
-        assertTrue(orderInCart.getItems().isEmpty());
-
-        verify(customerOrderRepository, times(1)).findByStatus(OrderStatus.CART);
-        verify(orderItemRepository, times(1)).delete(orderItem);
-        verify(customerOrderRepository, times(1)).save(orderInCart);
-    }
-
-    @Test
-    public void testRemoveCartItem_ItemNotFound() {
-
-        when(customerOrderRepository.findByStatus(OrderStatus.CART))
-            .thenReturn(Optional.of(orderInCart));
-        when(customerOrderRepository.save(any(CustomerOrder.class))).thenReturn(orderInCart);
-
-        cartService.removeCartItem(1);
-
-        assertTrue(orderInCart.getItems().isEmpty());
-
-        verify(customerOrderRepository, times(1)).findByStatus(OrderStatus.CART);
-        verify(orderItemRepository, never()).delete(any());
-        verify(customerOrderRepository, times(1)).save(orderInCart);
+    void findCartItemByProductId() {
+        StepVerifier.create(cartService.findCartItemByProductId(cartOrder, 1))
+            .expectNextMatches(item -> item.getProductId().equals(1))
+            .verifyComplete();
     }
 
 }

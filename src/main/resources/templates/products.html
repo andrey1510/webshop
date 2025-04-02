@@ -62,7 +62,61 @@
         }
 
     </style>
-    <script th:inline="javascript">
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Обработчик для добавления в корзину
+            document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const productId = this.getAttribute('data-product-id');
+                    fetch('/cart/add?productId=' + productId, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        }
+                    })
+                        .then(response => {
+                            if (response.redirected) {
+                                window.location.href = response.url;
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                });
+            });
+
+            // Обработчик для изменения количества
+            document.querySelectorAll('.update-quantity-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const productId = this.getAttribute('data-product-id');
+                    const quantity = this.getAttribute('data-quantity');
+                    fetch('/cart/update?productId=' + productId + '&quantity=' + quantity, {
+                        method: 'POST'
+                    })
+                        .then(response => {
+                            if (response.redirected) {
+                                window.location.href = response.url;
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                });
+            });
+
+            // Обработчик для удаления из корзины
+            document.querySelectorAll('.remove-from-cart-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const productId = this.getAttribute('data-product-id');
+                    fetch('/cart/remove?productId=' + productId, {
+                        method: 'POST'
+                    })
+                        .then(response => {
+                            if (response.redirected) {
+                                window.location.href = response.url;
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                });
+            });
+        });
+
         function changePageSize(size) {
             const urlParams = new URLSearchParams(window.location.search);
             urlParams.set('size', size);
@@ -86,7 +140,6 @@
 
 <!-- Форма фильтрации -->
 <form th:method="get" th:action="@{/products}" class="filters">
-    <!-- Скрытые поля для пагинации -->
     <input type="hidden" name="page" th:value="${currentPage}" />
     <input type="hidden" name="size" th:value="${pageSize}" />
 
@@ -112,7 +165,7 @@
 
 <!-- Список товаров -->
 <div class="product-container">
-    <div th:each="product : ${products.content}" class="product-card">
+    <div th:each="product : ${products}" class="product-card">
         <h3>
             <a th:href="@{/products/{id}(id=${product.id})}" th:text="${product.title}">Название товара</a>
         </h3>
@@ -128,36 +181,34 @@
         <div class="cart-controls">
             <!-- Если товар уже в корзине -->
             <div th:if="${cartProductsQuantities.containsKey(product.id)}">
-                <form th:action="@{/cart/update}" method="post">
-                    <input type="hidden" name="productId" th:value="${product.id}">
-                    <button type="submit" name="quantity"
-                            th:value="${cartProductsQuantities.get(product.id) - 1}"
-                            th:disabled="${cartProductsQuantities.get(product.id) <= 1}">
-                        -
-                    </button>
-                    <span th:text="${cartProductsQuantities.get(product.id)}">1</span>
-                    <button type="submit" name="quantity"
-                            th:value="${cartProductsQuantities.get(product.id) + 1}">
-                        +
-                    </button>
-                </form>
-                <form th:action="@{/cart/remove}" method="post">
-                    <input type="hidden" name="productId" th:value="${product.id}">
-                    <button type="submit" style="background: #ff4444; color: white; border: none; border-radius: 4px; padding: 5px 10px;">
-                        Удалить &times;
-                    </button>
-                </form>
+                <button type="button"
+                        th:disabled="${cartProductsQuantities.get(product.id) <= 1}"
+                        th:attr="data-product-id=${product.id},data-quantity=${cartProductsQuantities.get(product.id) - 1}"
+                        class="update-quantity-btn">
+                    -
+                </button>
+                <span th:text="${cartProductsQuantities.get(product.id)}">1</span>
+                <button type="button"
+                        th:attr="data-product-id=${product.id},data-quantity=${cartProductsQuantities.get(product.id) + 1}"
+                        class="update-quantity-btn">
+                    +
+                </button>
+                <button type="button"
+                        style="background: #ff4444; color: white; border: none; border-radius: 4px; padding: 5px 10px;"
+                        th:attr="data-product-id=${product.id}"
+                        class="remove-from-cart-btn">
+                    Удалить &times;
+                </button>
             </div>
 
             <!-- Если товара нет в корзине -->
             <div th:unless="${cartProductsQuantities.containsKey(product.id)}">
-                <form th:action="@{/cart/add}" method="post">
-                    <input type="hidden" name="productId" th:value="${product.id}">
-                    <input type="hidden" name="quantity" value="1">
-                    <button type="submit" style="background: #4CAF50; color: white; border: none; border-radius: 4px; padding: 8px 16px;">
-                        Добавить в корзину
-                    </button>
-                </form>
+                <button type="button"
+                        style="background: #4CAF50; color: white; border: none; border-radius: 4px; padding: 8px 16px;"
+                        th:attr="data-product-id=${product.id}"
+                        class="add-to-cart-btn">
+                    Добавить в корзину
+                </button>
             </div>
         </div>
     </div>
@@ -165,13 +216,13 @@
 
 <!-- Пагинация -->
 <div>
-    <span th:text="'Страница ' + (${currentPage + 1}) + ' из ' + ${totalPages}"></span>
+    <span th:text="'Страница ' + (${currentPage + 1}) + ' из ' + ${productsPage.totalPages}"></span>
     <nav>
         <ul>
             <li th:if="${currentPage > 0}">
                 <a th:href="@{/products(page=${currentPage - 1}, size=${pageSize}, title=${title}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort})}">Предыдущая</a>
             </li>
-            <li th:if="${currentPage < totalPages - 1}">
+            <li th:if="${currentPage + 1 < productsPage.totalPages}">
                 <a th:href="@{/products(page=${currentPage + 1}, size=${pageSize}, title=${title}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort})}">Следующая</a>
             </li>
         </ul>

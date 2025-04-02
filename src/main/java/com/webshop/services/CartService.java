@@ -2,26 +2,27 @@ package com.webshop.services;
 
 import com.webshop.entities.CustomerOrder;
 import com.webshop.entities.OrderItem;
+import reactor.core.publisher.Mono;
 
 import java.util.Map;
 
 public interface CartService {
 
-    CustomerOrder getCurrentCart();
+    Mono<CustomerOrder> getCurrentCartWithProducts();
 
-    Map<Integer, Integer> getCartProductsQuantity();
+    Mono<CustomerOrder> getCurrentCartNoProducts();
 
-    CustomerOrder createNewCart();
+    Mono<Map<Integer, Integer>> getCartProductsQuantity();
 
-    CustomerOrder completeOrder();
+    Mono<CustomerOrder> createNewCart();
 
-    Double calculateTotalPrice(CustomerOrder cart);
+    Mono<CustomerOrder> completeOrder();
 
-    void addItemToCart(Integer productId, Integer quantity);
+    Mono<Void> addItemToCart(Integer productId, Integer quantity);
 
-    void updateItemQuantity(Integer productId, Integer quantity);
+    Mono<Void> updateItemQuantity(Integer productId, Integer quantity);
 
-    void removeCartItem(Integer productId);
+    Mono<Void> removeCartItem(Integer productId);
 
-    OrderItem findCartItemByProductId(CustomerOrder cart, Integer productId);
+    Mono<OrderItem> findCartItemByProductId(CustomerOrder cart, Integer productId);
 }

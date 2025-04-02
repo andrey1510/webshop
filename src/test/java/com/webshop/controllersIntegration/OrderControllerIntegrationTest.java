@@ -1,53 +1,92 @@
 package com.webshop.controllersIntegration;
 
-import lombok.SneakyThrows;
+import com.webshop.configs.TestDatabaseConfig;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.r2dbc.connection.init.ConnectionFactoryInitializer;
+import org.springframework.r2dbc.connection.init.ResourceDatabasePopulator;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.jdbc.Sql;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.test.web.reactive.server.WebTestClient;
 
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Sql("/test-data-full.sql")
+@AutoConfigureWebTestClient
+@ActiveProfiles("testintegr")
+@SpringJUnitConfig
+@Import(TestDatabaseConfig.class)
 class OrderControllerIntegrationTest {
 
     @Autowired
-    private MockMvc mockMvc;
+    private WebTestClient webTestClient;
+
+    @Autowired
+    private ConnectionFactoryInitializer databaseInitializer;
+
+    @BeforeEach
+    void setUp() {
+        ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
+        populator.addScript(new ClassPathResource("schema.sql"));
+        populator.addScript(new ClassPathResource("test-data-full.sql"));
+        databaseInitializer.setDatabasePopulator(populator);
+        databaseInitializer.afterPropertiesSet();
+    }
 
     @Test
-    @SneakyThrows
     void testGetCompletedOrder() {
-        mockMvc.perform(MockMvcRequestBuilders.get("/orders/7"))
-            .andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(view().name("order"))
-            .andExpect(model().attributeExists("order"));
+        webTestClient.get()
+            .uri("/orders/7")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .consumeWith(result -> {
+                String response = new String(result.getResponseBody());
+                assertTrue(response.contains("Заказ № 7"));
+            });
     }
 
     @Test
-    @SneakyThrows
+    void testGetCompletedOrder_WrongId() {
+        webTestClient.get()
+            .uri("/orders/999")
+            .exchange()
+            .expectStatus().isNotFound();
+    }
+
+    @Test
     void testGetAllCompletedOrders() {
-        mockMvc.perform(MockMvcRequestBuilders.get("/orders"))
-            .andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(view().name("orders"))
-            .andExpect(model().attributeExists("orders"))
-            .andExpect(model().attributeExists("totalPrice"));
+        webTestClient.get()
+            .uri("/orders")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .consumeWith(result -> {
+                String response = new String(result.getResponseBody());
+                assertTrue(response.contains("Заказ № 7"));
+                assertTrue(response.contains("Заказ № 8"));
+            });
     }
 
     @Test
-    @SneakyThrows
-    void testHandleCustomerOrderNotFoundException() {
-        mockMvc.perform(MockMvcRequestBuilders.get("/orders/999"))
-            .andExpect(MockMvcResultMatchers.status().isNotFound())
-            .andExpect(view().name("order"))
-            .andExpect(model().attributeExists("errorMessage"));
+    void completeOrder_ShouldMoveCartToCompleted() {
+        webTestClient.post()
+            .uri("/orders/complete")
+            .exchange();
+        webTestClient.get()
+            .uri("/orders")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .consumeWith(result -> {
+                String response = new String(result.getResponseBody());
+                assertTrue(response.contains("Заказ № 7"));
+            });
     }
+
 }

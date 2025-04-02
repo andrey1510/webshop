@@ -3,14 +3,14 @@ package com.webshop.controllers;
 import com.webshop.dto.ProductInputDto;
 import com.webshop.services.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
 @Controller
 @RequiredArgsConstructor
@@ -20,19 +20,39 @@ public class ProductCreatorController {
     private final ProductService productService;
 
     @GetMapping
-    public String showForm() {
-        return "product-creator";
+    public Mono<String> showForm(ServerWebExchange exchange) {
+        return exchange.getSession()
+            .flatMap(session -> {
+                if (session.getAttributes().containsKey("successMessage")) {
+                    exchange.getAttributes().put(
+                        "successMessage",
+                        session.getAttribute("successMessage")
+                    );
+                }
+                return Mono.just("product-creator");
+            });
     }
 
     @PostMapping
-    public String createProduct(@ModelAttribute ProductInputDto productInputDto,
-                             @RequestParam(value = "image", required = false) MultipartFile image,
-                             RedirectAttributes redirectAttributes) {
-        productInputDto.setImage(image);
-        productService.createProduct(productInputDto);
+    public Mono<String> createProduct(
+        @RequestPart("title") String title,
+        @RequestPart("description") String description,
+        @RequestPart("price") String priceStr,
+        @RequestPart(value = "image", required = false) FilePart image,
+        ServerWebExchange exchange) {
 
-        redirectAttributes.addFlashAttribute("successMessage", "Товар успешно создан!");
-        return "redirect:/product-creator";
+        ProductInputDto dto = ProductInputDto.fromFormData(
+            title,
+            description,
+            priceStr,
+            image
+        );
+
+        return productService.createProduct(dto)
+            .doOnSuccess(p -> exchange.getSession()
+                .doOnNext(session -> session.getAttributes().put("successMessage", "Товар успешно создан!"))
+                .subscribe())
+            .thenReturn("redirect:/product-creator");
     }
 
 }

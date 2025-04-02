@@ -4,12 +4,13 @@ import com.webshop.dto.ProductInputDto;
 import com.webshop.dto.ProductPreviewDto;
 import com.webshop.entities.Product;
 import org.springframework.data.domain.Page;
+import reactor.core.publisher.Mono;
 
 public interface ProductService {
 
-    Product createProduct(ProductInputDto productInputDto);
+    Mono<Product> createProduct(ProductInputDto productInputDto);
 
-    Product getProductById(Integer id);
+    Mono<Product> getProductById(Integer id);
 
-    Page<ProductPreviewDto> getProductPreviewDtos(String title, Double minPrice, Double maxPrice, String sort, int page, int size);
+    Mono<Page<ProductPreviewDto>> getPageableProductPreviewDtos(String title, Double minPrice, Double maxPrice, String sort, int page, int size);
 }

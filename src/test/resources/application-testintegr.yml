@@ -28,7 +28,7 @@ spring:
       max-chunk-size: 8KB
   sql:
     init:
-      mode: always
+      mode: never
       schema-locations: schema.sql
       data-locations: test-data-full.sql
 

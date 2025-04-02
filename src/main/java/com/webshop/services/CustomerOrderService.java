@@ -1,14 +1,14 @@
 package com.webshop.services;
 
 import com.webshop.entities.CustomerOrder;
-
-import java.util.List;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 public interface CustomerOrderService {
 
-    CustomerOrder getCompletedOrderById(Integer orderId);
+    Mono<CustomerOrder> getCompletedOrderById(Integer orderId);
 
-    List<CustomerOrder> getCompletedOrders();
+    Flux<CustomerOrder> getCompletedOrders();
 
-    Double getTotalPriceOfCompletedOrders();
+    Mono<Double> getTotalPriceOfCompletedOrders();
 }
