@@ -111,23 +111,29 @@
 
 <!-- Товары в корзине -->
 <div class="cart-container">
-    <!-- Если заказ не найден -->
+    <!-- Сообщения об ошибках -->
     <div th:if="${errorMessage != null}" class="error-message">
-        <p th:text="${errorMessage}">Корзина пустая.</p>
+        <p th:text="${errorMessage}"></p>
     </div>
 
-    <table style="width:70%; margin: 20px auto;">
+    <!-- Если корзина пустая -->
+    <div th:if="${cart?.items == null or cart.items.empty}" class="warning-message">
+        <p>Ваша корзина пуста</p>
+    </div>
+
+    <!-- Таблица с товарами -->
+    <table th:if="${cart?.items != null and not cart.items.empty}">
         <tr>
             <th>Название</th>
             <th>Цена</th>
             <th>Количество</th>
             <th>Общая цена</th>
-            <th>Изменение / удаление</th>
+            <th>Действия</th>
         </tr>
 
         <tr th:each="item : ${cart.items}">
             <td th:text="${item.product.title}">Название</td>
-            <td th:text="${item.product.price} + ' ₽'">Цена</td>
+            <td th:text="${#numbers.formatDecimal(item.product.price, 1, 2)} + ' ₽'">Цена</td>
             <td>
                 <button type="button"
                         th:disabled="${item.quantity <= 1}"
@@ -142,25 +148,33 @@
                     +
                 </button>
             </td>
-            <td th:text="${item.product.price * item.quantity} + ' ₽'">Общая цена</td>
+            <td th:text="${#numbers.formatDecimal(item.product.price * item.quantity, 1, 2)} + ' ₽'">Общая цена</td>
             <td>
                 <button type="button"
-                        style="background: #ff4444; color: white; border: none; border-radius: 4px; padding: 5px 10px;"
-                        th:attr="data-product-id=${item.product.id}"
-                        class="remove-from-cart-btn">
+                        class="remove-from-cart-btn"
+                        th:attr="data-product-id=${item.product.id}">
                     Удалить &times;
                 </button>
             </td>
         </tr>
     </table>
 
-    <!-- Общая стоимость корзины -->
-    <h2>Общая стоимость корзины: <span th:text="${totalPrice} + ' ₽'">0.00</span></h2>
+    <!-- Общая стоимость и оформление заказа -->
+    <div th:if="${cart?.items != null and not cart.items.empty}">
+        <h2>Общая стоимость: <span th:text="${#numbers.formatDecimal(totalPrice, 1, 2)} + ' ₽'">0.00</span></h2>
 
-    <!-- Оформление заказа -->
-    <form th:action="@{/cart/checkout}" method="post">
-        <button type="submit">Оформить заказ</button>
-    </form>
+        <!-- Кнопка оформления заказа -->
+        <form th:action="@{/cart/checkout}" method="post">
+            <button type="submit"
+                    class="checkout-btn"
+                    th:disabled="${isBalanceSufficient == false}">
+                Оформить заказ
+            </button>
+            <div th:if="${isBalanceSufficient == false}" class="error-message">
+                Недостаточно средств на балансе для оформления заказа
+            </div>
+        </form>
+    </div>
 </div>
 </body>
 </html>

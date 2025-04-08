@@ -12,6 +12,9 @@ import com.shopservice.repositories.OrderItemProductRepository;
 import com.shopservice.repositories.OrderItemRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -24,6 +27,7 @@ import java.util.Map;
 @Slf4j
 @RequiredArgsConstructor
 @Service
+@CacheConfig(cacheNames = "carts")
 public class CartServiceImpl implements CartService{
 
     private final CustomerOrderRepository customerOrderRepository;
@@ -33,6 +37,7 @@ public class CartServiceImpl implements CartService{
     private final ProductService productService;
 
     @Override
+    @Cacheable(key = "'current:' + T(java.util.Objects).hash(#result?.id)", unless = "#result?.items == null || #result.items.empty")
     public Mono<CustomerOrder> getCurrentCartWithProducts() {
         return customerOrderRepository.findByStatus(OrderStatus.CART)
             .switchIfEmpty(createNewCart())
@@ -54,6 +59,7 @@ public class CartServiceImpl implements CartService{
                 .thenReturn(order));
     }
 
+    @Override
     public Mono<Map<Integer, Integer>> getCartProductsQuantity() {
         return getCurrentCartWithProducts()
             .flatMapMany(order -> Flux.fromIterable(order.getItems() != null ? order.getItems() : Collections.emptyList()))
@@ -66,6 +72,7 @@ public class CartServiceImpl implements CartService{
     }
 
     @Override
+    @CacheEvict(key = "'current:' + #result?.id")
     public Mono<CustomerOrder> createNewCart() {
         CustomerOrder orderInCart = new CustomerOrder();
         orderInCart.setStatus(OrderStatus.CART);
@@ -74,6 +81,7 @@ public class CartServiceImpl implements CartService{
     }
 
     @Override
+    @CacheEvict(key = "'current:' + #result?.id")
     public Mono<CustomerOrder> completeOrder() {
         return getCurrentCartWithProducts()
             .flatMap(orderInCart -> {
@@ -92,6 +100,7 @@ public class CartServiceImpl implements CartService{
     }
 
     @Override
+    @CacheEvict(key = "'current'", allEntries = true)
     public Mono<Void> addItemToCart(Integer productId, Integer quantity) {
 
         if (quantity <= 0) return Mono.error(new WrongQuantityException("Количество должно быть больше 0"));
@@ -119,6 +128,7 @@ public class CartServiceImpl implements CartService{
     }
 
     @Override
+    @CacheEvict(key = "'current'")
     public Mono<Void> updateItemQuantity(Integer productId, Integer quantity) {
 
         if (quantity <= 0) return Mono.error(new WrongQuantityException("Количество должно быть больше 0"));
@@ -135,6 +145,7 @@ public class CartServiceImpl implements CartService{
     }
 
     @Override
+    @CacheEvict(key = "'current'")
     public Mono<Void> removeCartItem(Integer productId) {
         return getCurrentCartNoProducts()
             .flatMap(orderInCart -> findCartItemByProductId(orderInCart, productId)

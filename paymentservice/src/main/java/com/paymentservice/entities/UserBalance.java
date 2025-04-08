@@ -11,8 +11,8 @@ import org.springframework.data.relational.core.mapping.Table;
 @AllArgsConstructor
 @Data
 @Builder
-@Table("payment-accounts")
-public class PaymentAccount {
+@Table("balances")
+public class UserBalance {
 
     @Id
     private Integer id;

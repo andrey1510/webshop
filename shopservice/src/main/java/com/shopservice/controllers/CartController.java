@@ -3,6 +3,7 @@ package com.shopservice.controllers;
 import com.shopservice.exceptions.AlreadyInCartException;
 import com.shopservice.exceptions.CartIsEmptyException;
 import com.shopservice.services.CartService;
+import com.shopservice.services.PaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 public class CartController {
 
     private final CartService cartService;
+    private final PaymentService paymentService;
 
     @GetMapping
     public Mono<String> getCart(ServerWebExchange exchange) {
@@ -36,9 +38,13 @@ public class CartController {
                     .mapToDouble(item -> item.getProduct().getPrice() * item.getQuantity())
                     .sum();
 
-                exchange.getAttributes().put("cart", order);
-                exchange.getAttributes().put("totalPrice", totalPrice);
-                return Mono.just("cart");
+                return paymentService.checkFunds(1, totalPrice)
+                    .map(isSufficient -> {
+                        exchange.getAttributes().put("cart", order);
+                        exchange.getAttributes().put("totalPrice", totalPrice);
+                        exchange.getAttributes().put("isBalanceSufficient", isSufficient);
+                        return "cart";
+                    });
             });
     }
 
@@ -85,16 +91,34 @@ public class CartController {
             return redirectView;
         }));
     }
+
     @PostMapping("/checkout")
     public Mono<String> completeOrder(ServerWebExchange exchange) {
-        return cartService.completeOrder()
-            .map(order -> "redirect:/orders/" + order.getId())
-            .onErrorResume(CartIsEmptyException.class, e -> exchange.getSession()
-                .doOnNext(session -> {
-                    session.getAttributes().put("errorMessage", e.getMessage());
-                    log.warn("Cart checkout error: {}", e.getMessage());
-                })
-                .thenReturn("redirect:/cart"));
+        return cartService.getCurrentCartWithProducts()
+            .flatMap(order -> {
+                double totalPrice = order.getItems().stream()
+                    .filter(item -> item.getProduct() != null)
+                    .mapToDouble(item -> item.getProduct().getPrice() * item.getQuantity())
+                    .sum();
+
+                return paymentService.processPayment(1, totalPrice)
+                    .flatMap(isSufficient -> {
+                        if (!isSufficient) {
+                            return exchange.getSession()
+                                .doOnNext(session -> session.getAttributes().put("errorMessage",
+                                    "Оплата заказа не прошла, заказ не оформлен"))
+                                .thenReturn("redirect:/cart");
+                        }
+                        return cartService.completeOrder()
+                            .map(completedOrder -> "redirect:/orders/" + completedOrder.getId())
+                            .onErrorResume(CartIsEmptyException.class, e -> exchange.getSession()
+                                .doOnNext(session -> {
+                                    session.getAttributes().put("errorMessage", e.getMessage());
+                                    log.warn("checkout error: {}", e.getMessage());
+                                })
+                                .thenReturn("redirect:/cart"));
+                    });
+            });
     }
 
     @ExceptionHandler({AlreadyInCartException.class, CartIsEmptyException.class})

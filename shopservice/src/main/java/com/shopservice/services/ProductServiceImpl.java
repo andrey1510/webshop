@@ -13,6 +13,9 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -33,6 +36,7 @@ import java.nio.file.Paths;
 @Slf4j
 @RequiredArgsConstructor
 @Service
+@CacheConfig(cacheNames = "products")
 public class ProductServiceImpl implements ProductService {
 
     @Value("${images.upload-directory}")
@@ -42,6 +46,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
 
     @Override
+    @Cacheable(key = "'product:' + #id")
     public Mono<Product> getProductById(Integer id) {
         return productRepository.findById(id)
             .switchIfEmpty(Mono.error(new ProductNotFoundException("Товар не найден")))
@@ -55,6 +60,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Cacheable(key = "'allProducts' + #title + #minPrice + #maxPrice + #sort + #page + #size")
     public Mono<Page<ProductPreviewDto>> getPageableProductPreviewDtos(
         String title, Double minPrice, Double maxPrice, String sort, int page, int size) {
 
@@ -98,6 +104,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @CacheEvict(key = "'allProducts' + '*'")
     public Mono<Product> createProduct(ProductInputDto productInputDto) {
         return Mono.justOrEmpty(productInputDto.image())
             .flatMap(image -> {

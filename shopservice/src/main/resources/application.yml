@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: shopservice
+  data:
+    redis:
+      host: localhost
+      port: 6379
   webflux:
     hiddenmethod:
       filter:
@@ -26,6 +30,7 @@ spring:
     encoding: UTF-8
     reactive:
       max-chunk-size: 8KB
+
 
 images:
   upload-directory: ./uploads/
