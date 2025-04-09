@@ -3,7 +3,7 @@ services:
   app:
     container_name: webshop
     build:
-      context: .
+      context: ./shopservice
       dockerfile: Dockerfile
     environment:
       SPRING_R2DBC_URL: r2dbc:h2:mem:///testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
@@ -21,6 +21,4 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
-    volumes:
-      - .redis_data:/data
     restart: unless-stopped

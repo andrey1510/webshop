@@ -64,11 +64,11 @@ public class ProductController {
     @GetMapping
     public Mono<String> getProducts(
         @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "100") int size,
+        @RequestParam(defaultValue = "10") int size,
         @RequestParam(required = false) String title,
         @RequestParam(required = false) Double minPrice,
         @RequestParam(required = false) Double maxPrice,
-        @RequestParam(defaultValue = "asc") String sort,
+        @RequestParam(defaultValue = "title-asc") String sort,
         ServerWebExchange exchange) {
 
         Mono<Page<ProductPreviewDto>> productsPageMono = productService.getPageableProductPreviewDtos(
@@ -76,7 +76,6 @@ public class ProductController {
             .doOnError(e -> log.error("Error loading products", e));
 
         Mono<Map<Integer, Integer>> cartQuantitiesMono = cartService.getCartProductsQuantity()
-            .doOnNext(quantities -> log.info("Cart quantities: {}", quantities))
             .doOnError(e -> log.error("Error loading cart quantities", e))
             .defaultIfEmpty(Collections.emptyMap());
 

@@ -8,6 +8,13 @@ spring:
     redis:
       host: localhost
       port: 6379
+  cache:
+    type: redis
+    redis:
+      key-prefix: "shop:"
+      use-key-prefix: true
+      time-to-live: 1h
+      cache-null-values: false
   webflux:
     hiddenmethod:
       filter:

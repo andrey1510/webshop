@@ -31,7 +31,7 @@ public class CartController {
     @GetMapping
     public Mono<String> getCart(ServerWebExchange exchange) {
         return cartService.getCurrentCartWithProducts()
-            .doOnError(e -> log.error("Error retrieving cart", e))
+            .doOnError(e -> log.error("Ошибка при получении корзины: {}", e.getMessage()))
             .flatMap(order -> {
                 double totalPrice = order.getItems().stream()
                     .filter(item -> item.getProduct() != null)
@@ -39,6 +39,7 @@ public class CartController {
                     .sum();
 
                 return paymentService.checkFunds(1, totalPrice)
+                    .doOnError(e -> log.error("Ошибка при запросе к PaymentService: {}", e.getMessage()))
                     .map(isSufficient -> {
                         exchange.getAttributes().put("cart", order);
                         exchange.getAttributes().put("totalPrice", totalPrice);
@@ -111,12 +112,14 @@ public class CartController {
                         }
                         return cartService.completeOrder()
                             .map(completedOrder -> "redirect:/orders/" + completedOrder.getId())
-                            .onErrorResume(CartIsEmptyException.class, e -> exchange.getSession()
-                                .doOnNext(session -> {
-                                    session.getAttributes().put("errorMessage", e.getMessage());
-                                    log.warn("checkout error: {}", e.getMessage());
-                                })
-                                .thenReturn("redirect:/cart"));
+                            .onErrorResume(CartIsEmptyException.class, e -> {
+                                log.error("Ошибка оформления заказа: {}", e.getMessage());
+                                return exchange.getSession()
+                                    .doOnNext(session -> {
+                                        session.getAttributes().put("errorMessage", e.getMessage());
+                                    })
+                                    .thenReturn("redirect:/cart");
+                            });
                     });
             });
     }

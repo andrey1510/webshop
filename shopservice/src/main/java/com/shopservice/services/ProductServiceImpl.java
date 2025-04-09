@@ -60,7 +60,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    @Cacheable(key = "'allProducts' + #title + #minPrice + #maxPrice + #sort + #page + #size")
+    @Cacheable(key = "'allProducts:' + #title + ':' + #minPrice + ':' + #maxPrice + ':' + #sort + ':' + #page + ':' + #size")
     public Mono<Page<ProductPreviewDto>> getPageableProductPreviewDtos(
         String title, Double minPrice, Double maxPrice, String sort, int page, int size) {
 

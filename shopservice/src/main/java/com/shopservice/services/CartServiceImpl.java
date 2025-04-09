@@ -37,7 +37,7 @@ public class CartServiceImpl implements CartService{
     private final ProductService productService;
 
     @Override
-    @Cacheable(key = "'current:' + T(java.util.Objects).hash(#result?.id)", unless = "#result?.items == null || #result.items.empty")
+    @Cacheable(key = "'user:' + #result?.id", unless = "#result?.status != T(com.shopservice.entities.OrderStatus).CART")
     public Mono<CustomerOrder> getCurrentCartWithProducts() {
         return customerOrderRepository.findByStatus(OrderStatus.CART)
             .switchIfEmpty(createNewCart())
@@ -72,7 +72,7 @@ public class CartServiceImpl implements CartService{
     }
 
     @Override
-    @CacheEvict(key = "'current:' + #result?.id")
+    @CacheEvict(key = "'user:' + #result?.id")
     public Mono<CustomerOrder> createNewCart() {
         CustomerOrder orderInCart = new CustomerOrder();
         orderInCart.setStatus(OrderStatus.CART);
@@ -81,7 +81,7 @@ public class CartServiceImpl implements CartService{
     }
 
     @Override
-    @CacheEvict(key = "'current:' + #result?.id")
+    @CacheEvict(key = "'user:' + #result?.id", beforeInvocation = true)
     public Mono<CustomerOrder> completeOrder() {
         return getCurrentCartWithProducts()
             .flatMap(orderInCart -> {
@@ -100,7 +100,7 @@ public class CartServiceImpl implements CartService{
     }
 
     @Override
-    @CacheEvict(key = "'current'", allEntries = true)
+    @CacheEvict(key = "'user:' + #result?.id")
     public Mono<Void> addItemToCart(Integer productId, Integer quantity) {
 
         if (quantity <= 0) return Mono.error(new WrongQuantityException("Количество должно быть больше 0"));
@@ -128,7 +128,7 @@ public class CartServiceImpl implements CartService{
     }
 
     @Override
-    @CacheEvict(key = "'current'")
+    @CacheEvict(key = "'user:' + #result?.id")
     public Mono<Void> updateItemQuantity(Integer productId, Integer quantity) {
 
         if (quantity <= 0) return Mono.error(new WrongQuantityException("Количество должно быть больше 0"));
@@ -145,7 +145,7 @@ public class CartServiceImpl implements CartService{
     }
 
     @Override
-    @CacheEvict(key = "'current'")
+    @CacheEvict(key = "'user:' + #result?.id")
     public Mono<Void> removeCartItem(Integer productId) {
         return getCurrentCartNoProducts()
             .flatMap(orderInCart -> findCartItemByProductId(orderInCart, productId)

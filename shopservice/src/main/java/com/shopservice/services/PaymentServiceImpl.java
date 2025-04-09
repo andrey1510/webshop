@@ -18,7 +18,7 @@ public class PaymentServiceImpl implements PaymentService {
     public Mono<Boolean> checkFunds(Integer userId, Double amount) {
         return webClient.get()
             .uri(uriBuilder -> uriBuilder
-                .path("http://localhost:8889/api/payments/check")
+                .path("/api/payments/check")
                 .queryParam("id", userId)
                 .queryParam("amount", amount)
                 .build())
@@ -31,7 +31,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public Mono<Boolean> processPayment(Integer userId, Double amount) {
         return webClient.post()
-            .uri("http://localhost:8889/api/payments/pay")
+            .uri("/api/payments/pay")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(new PaymentRequest(userId, amount))
             .retrieve()

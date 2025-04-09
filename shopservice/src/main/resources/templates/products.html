@@ -64,6 +64,9 @@
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            if (window.location.search === '') {
+                window.location.href = '/products?page=0&size=10&sort=title-asc';
+            }
             // Обработчик для добавления в корзину
             document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
