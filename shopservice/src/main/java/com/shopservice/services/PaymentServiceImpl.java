@@ -4,9 +4,7 @@ import com.shopservice.generated.api.PaymentApi;
 import com.shopservice.generated.dto.PaymentRequest;
 import com.shopservice.generated.dto.PaymentResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 @RequiredArgsConstructor

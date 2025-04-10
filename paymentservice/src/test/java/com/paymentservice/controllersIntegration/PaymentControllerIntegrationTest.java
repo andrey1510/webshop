@@ -9,12 +9,12 @@ import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWeb
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.MediaType;
 import org.springframework.r2dbc.connection.init.ConnectionFactoryInitializer;
 import org.springframework.r2dbc.connection.init.ResourceDatabasePopulator;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import reactor.core.publisher.Mono;
 
 @SpringBootTest
 @AutoConfigureWebTestClient
@@ -39,13 +39,13 @@ class PaymentControllerIntegrationTest {
     }
 
     @Test
-    void testCheckFunds() {
+    void testCheckFunds_SufficientBalance() {
         int userId = 1;
         double amount = 500.0;
 
         webTestClient.get()
             .uri(uriBuilder -> uriBuilder
-                .path("/api/payments/check")
+                .path("/check")
                 .queryParam("id", userId)
                 .queryParam("amount", amount)
                 .build())
@@ -63,7 +63,7 @@ class PaymentControllerIntegrationTest {
 
         webTestClient.get()
             .uri(uriBuilder -> uriBuilder
-                .path("/api/payments/check")
+                .path("/check")
                 .queryParam("id", userId)
                 .queryParam("amount", amount)
                 .build())
@@ -75,31 +75,36 @@ class PaymentControllerIntegrationTest {
     }
 
     @Test
-    void testProcessPayment() {
-        PaymentRequest request = new PaymentRequest(3, 300.0);
+    void testProcessPayment_Success() {
+        PaymentRequest request = new PaymentRequest()
+            .id(3)
+            .amount(300.0);
 
         webTestClient.post()
-            .uri("/api/payments/pay")
-            .body(Mono.just(request), PaymentRequest.class)
+            .uri("/pay")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
             .exchange()
             .expectStatus().isOk()
             .expectBody()
-            .jsonPath("$.id").isEqualTo(request.id())
+            .jsonPath("$.id").isEqualTo(request.getId())
             .jsonPath("$.isBalanceSufficient").isEqualTo(true);
     }
 
     @Test
     void testProcessPayment_InsufficientBalance() {
-        PaymentRequest request = new PaymentRequest(4, 1500.0);
+        PaymentRequest request = new PaymentRequest()
+            .id(1)
+            .amount(15000.0);
 
         webTestClient.post()
-            .uri("/api/payments/pay")
-            .body(Mono.just(request), PaymentRequest.class)
+            .uri("/pay")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
             .exchange()
             .expectStatus().isBadRequest()
             .expectBody()
-            .jsonPath("$.id").isEqualTo(request.id())
+            .jsonPath("$.id").isEqualTo(request.getId())
             .jsonPath("$.isBalanceSufficient").isEqualTo(false);
     }
-
 }

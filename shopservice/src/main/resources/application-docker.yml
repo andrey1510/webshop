@@ -6,7 +6,7 @@ spring:
     name: shopservice
   data:
     redis:
-      host: localhost
+      host: redis
       port: 6379
   cache:
     type: redis
@@ -42,4 +42,4 @@ spring:
 images:
   upload-directory: ./uploads/
 
-paymentservice-url: http://localhost:8889
+paymentservice-url: http://paymentservice:8889

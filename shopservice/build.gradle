@@ -39,18 +39,17 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
     implementation 'io.lettuce:lettuce-core'
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'commons-io:commons-io:2.18.0'
-    implementation 'org.liquibase:liquibase-core'
     implementation 'org.yaml:snakeyaml:2.0'
-    implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
     implementation 'io.springfox:springfox-swagger2:3.0.0'
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
     implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
     implementation 'javax.annotation:javax.annotation-api:1.3.2'
     implementation 'org.openapitools:openapi-generator-gradle-plugin:7.2.0'
     implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    implementation 'ch.qos.logback:logback-classic'
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.h2database:h2'
     runtimeOnly 'io.r2dbc:r2dbc-h2'
@@ -60,6 +59,10 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
+
+    configurations.all {
+        exclude group: 'org.slf4j', module: 'slf4j-simple'
+    }
 }
 
 openApiGenerate {
@@ -74,7 +77,16 @@ openApiGenerate {
             useBeanValidation: "false",
             openApiNullable: "false",
             serializationLibrary: "jackson",
-            dateLibrary: "java8"
+            dateLibrary: "java8",
+            reactive: "true",
+            useSpringController: "true",
+            useSpringWebFlux: "true",
+            skipDefaultInterface: "true",
+            useTags: "true",
+            delegatePattern: "false",
+            useOptional: "false",
+            returnResponse: "false",
+            hideGenerationTimestamp: "true"
     ]
 }
 

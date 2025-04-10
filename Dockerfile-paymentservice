@@ -1,0 +1,16 @@
+FROM amazoncorretto:21 AS build
+COPY paymentservice/build.gradle /app/
+COPY paymentservice/gradlew /app/
+COPY paymentservice/gradlew.bat /app/
+COPY paymentservice-api.yaml /app/
+COPY gradle/wrapper/gradle-wrapper.jar /app/gradle/wrapper/
+COPY gradle/wrapper/gradle-wrapper.properties /app/gradle/wrapper/
+COPY paymentservice/src /app/src
+WORKDIR /app
+RUN ./gradlew clean build
+
+FROM amazoncorretto:21-al2023-headful
+COPY --from=build /app/build/libs/paymentservice.jar /app/paymentservice.jar
+WORKDIR /app
+EXPOSE 8889
+ENTRYPOINT ["java", "-jar", "/app/paymentservice.jar"]

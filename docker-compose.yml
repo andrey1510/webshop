@@ -1,20 +1,43 @@
 services:
 
-  app:
-    container_name: webshop
+  shopservice:
+    container_name: shopservice
     build:
-      context: ./shopservice
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile-shopservice
     environment:
+      SPRING_PROFILES_ACTIVE: docker
       SPRING_R2DBC_URL: r2dbc:h2:mem:///testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
       SPRING_DATASOURCE_URL: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
       SPRING_R2DBC_USERNAME: sa
-      SPRING_DATASOURCE_USERNAME: sa
+      SPRING_DATASOURCE_USERNAME:
     ports:
       - "8888:8888"
     volumes:
       - ./uploads:/app/uploads
     restart: unless-stopped
+    depends_on:
+      - redis
+    networks:
+      - webshop-network
+
+  paymentservice:
+    container_name: paymentservice
+    build:
+      context: .
+      dockerfile: Dockerfile-paymentservice
+    environment:
+      SPRING_R2DBC_URL: r2dbc:h2:mem:///testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+      SPRING_DATASOURCE_URL: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+      SPRING_R2DBC_USERNAME: sa
+      SPRING_DATASOURCE_USERNAME:
+    ports:
+      - "8889:8889"
+    restart: unless-stopped
+    depends_on:
+      - redis
+    networks:
+      - webshop-network
 
   redis:
     image: redis:7.4.2-bookworm
@@ -22,3 +45,9 @@ services:
     ports:
       - "6379:6379"
     restart: unless-stopped
+    networks:
+      - webshop-network
+
+networks:
+  webshop-network:
+    driver: bridge

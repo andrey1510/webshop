@@ -3,9 +3,6 @@ info:
   title: Payment Service API
   description: API для взаимодействия с платежным сервисом
   version: 1.0.0
-servers:
-  - url: http://localhost:8889
-    description: Локальный сервер платежного сервиса
 paths:
   /check:
     get:
