@@ -30,12 +30,12 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Mono<Void> processPayment(PaymentRequest request) {
-        return hasSufficientFunds(request.id(), request.amount())
+        return hasSufficientFunds(request.getId(), request.getAmount())
             .flatMap(hasFunds -> {
                 if (!hasFunds) {
                     return Mono.error(new PaymentException("Недостаточно средств"));
                 }
-                return deductFromBalance(request.id(), request.amount());
+                return deductFromBalance(request.getId(), request.getAmount());
             });
     }
 

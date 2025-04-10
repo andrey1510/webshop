@@ -1,0 +1,18 @@
+server:
+  port: 8889
+
+spring:
+  application:
+    name: paymentservice
+  r2dbc:
+    url: r2dbc:h2:mem:///testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    pool:
+      initial-size: 5
+      max-size: 10
+  sql:
+    init:
+      mode: never
+      schema-locations: schema.sql
+      data-locations: data.sql

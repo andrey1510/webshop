@@ -1,0 +1,4 @@
+rootProject.name = 'webshop'
+
+include 'shopservice'
+include 'paymentservice'

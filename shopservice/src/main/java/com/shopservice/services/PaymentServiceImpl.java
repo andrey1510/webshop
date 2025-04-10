@@ -1,7 +1,8 @@
 package com.shopservice.services;
 
-import com.shopservice.dto.PaymentRequest;
-import com.shopservice.dto.PaymentResponse;
+import com.shopservice.generated.api.PaymentApi;
+import com.shopservice.generated.dto.PaymentRequest;
+import com.shopservice.generated.dto.PaymentResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -12,31 +13,23 @@ import reactor.core.publisher.Mono;
 @Service
 public class PaymentServiceImpl implements PaymentService {
 
-    private final WebClient webClient;
+    private final PaymentApi paymentApi;
 
     @Override
     public Mono<Boolean> checkFunds(Integer userId, Double amount) {
-        return webClient.get()
-            .uri(uriBuilder -> uriBuilder
-                .path("/api/payments/check")
-                .queryParam("id", userId)
-                .queryParam("amount", amount)
-                .build())
-            .retrieve()
-            .bodyToMono(PaymentResponse.class)
-            .map(PaymentResponse::isBalanceSufficient)
+        return paymentApi.checkFunds(userId, amount)
+            .map(PaymentResponse::getIsBalanceSufficient)
             .onErrorReturn(false);
     }
 
     @Override
     public Mono<Boolean> processPayment(Integer userId, Double amount) {
-        return webClient.post()
-            .uri("/api/payments/pay")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(new PaymentRequest(userId, amount))
-            .retrieve()
-            .bodyToMono(PaymentResponse.class)
-            .map(PaymentResponse::isBalanceSufficient)
+        PaymentRequest paymentRequest = new PaymentRequest()
+            .id(userId)
+            .amount(amount);
+
+        return paymentApi.processPayment(paymentRequest)
+            .map(PaymentResponse::getIsBalanceSufficient)
             .onErrorReturn(false);
     }
 }

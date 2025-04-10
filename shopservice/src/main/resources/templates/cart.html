@@ -167,11 +167,14 @@
         <form th:action="@{/cart/checkout}" method="post">
             <button type="submit"
                     class="checkout-btn"
-                    th:disabled="${isBalanceSufficient == false}">
+                    th:disabled="${isBalanceSufficient == false or paymentServiceError == true}">
                 Оформить заказ
             </button>
             <div th:if="${isBalanceSufficient == false}" class="error-message">
                 Недостаточно средств на балансе для оформления заказа
+            </div>
+            <div th:if="${paymentServiceError == true}" class="error-message">
+                Сервис оплаты временно недоступен
             </div>
         </form>
     </div>

@@ -39,7 +39,12 @@ public class CartController {
                     .sum();
 
                 return paymentService.checkFunds(1, totalPrice)
-                    .doOnError(e -> log.error("Ошибка при запросе к PaymentService: {}", e.getMessage()))
+                    .onErrorResume(e -> {
+                        log.error("Ошибка при запросе к PaymentService: {}", e.getMessage());
+                        exchange.getAttributes().put("paymentServiceError", true);
+                        return Mono.just(false);
+                    })
+                    .defaultIfEmpty(false)
                     .map(isSufficient -> {
                         exchange.getAttributes().put("cart", order);
                         exchange.getAttributes().put("totalPrice", totalPrice);

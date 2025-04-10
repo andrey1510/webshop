@@ -1,0 +1,84 @@
+openapi: 3.0.3
+info:
+  title: Payment Service API
+  description: API для взаимодействия с платежным сервисом
+  version: 1.0.0
+servers:
+  - url: http://localhost:8889
+    description: Локальный сервер платежного сервиса
+paths:
+  /check:
+    get:
+      tags:
+        - payment
+      summary: Проверка достаточности средств
+      description: Проверяет, достаточно ли средств у пользователя для совершения операции
+      operationId: checkFunds
+      parameters:
+        - name: id
+          in: query
+          description: ID пользователя
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - name: amount
+          in: query
+          description: Сумма для проверки
+          required: true
+          schema:
+            type: number
+            format: double
+      responses:
+        '200':
+          description: Успешный ответ с результатом проверки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+  /pay:
+    post:
+      tags:
+        - payment
+      summary: Списание средств
+      description: Выполняет списание средств с баланса пользователя
+      operationId: processPayment
+      requestBody:
+        description: Данные для списания
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '200':
+          description: Успешное списание средств
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+components:
+  schemas:
+    PaymentRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        amount:
+          type: number
+          format: double
+      required:
+        - id
+        - amount
+    PaymentResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        isBalanceSufficient:
+          type: boolean
+      required:
+        - id
+        - isBalanceSufficient

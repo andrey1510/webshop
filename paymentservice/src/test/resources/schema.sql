@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS balances (
+    id SERIAL PRIMARY KEY,
+    balance DECIMAL(10,2) NOT NULL
+);
