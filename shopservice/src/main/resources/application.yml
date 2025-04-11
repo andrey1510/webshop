@@ -37,7 +37,15 @@ spring:
     encoding: UTF-8
     reactive:
       max-chunk-size: 8KB
-
+keycloak:
+  auth-server-url: http://localhost:8080/auth
+  realm: realm
+  resource: id
+  public-client: true
+  bearer-only: true
+  ssl-required: external
+  credentials:
+    secret: secret
 
 images:
   upload-directory: ./uploads/
