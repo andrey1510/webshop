@@ -7,6 +7,7 @@ import com.shopservice.services.PaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,6 +29,7 @@ public class CartController {
     private final CartService cartService;
     private final PaymentService paymentService;
 
+    @PreAuthorize("hasRole('USER')")
     @GetMapping
     public Mono<String> getCart(ServerWebExchange exchange) {
         return cartService.getCurrentCartWithProducts()
@@ -54,6 +56,7 @@ public class CartController {
             });
     }
 
+    @PreAuthorize("hasRole('USER')")
     @PostMapping(value = "/add")
     public Mono<String> addCartItem(
         @RequestParam("productId") Integer productId,
@@ -73,6 +76,7 @@ public class CartController {
     }
 
 
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/update")
     public Mono<RedirectView> updateCartItem(
         @RequestParam("productId") Integer productId,
@@ -87,6 +91,7 @@ public class CartController {
         }));
     }
 
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/remove")
     public Mono<RedirectView> removeCartItem(
         @RequestParam("productId") Integer productId,
@@ -98,6 +103,7 @@ public class CartController {
         }));
     }
 
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/checkout")
     public Mono<String> completeOrder(ServerWebExchange exchange) {
         return cartService.getCurrentCartWithProducts()

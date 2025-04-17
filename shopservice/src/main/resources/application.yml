@@ -13,7 +13,7 @@ spring:
     redis:
       key-prefix: "shop:"
       use-key-prefix: true
-      time-to-live: 1h
+      time-to-live: 3m
       cache-null-values: false
   webflux:
     hiddenmethod:
@@ -37,15 +37,24 @@ spring:
     encoding: UTF-8
     reactive:
       max-chunk-size: 8KB
-keycloak:
-  auth-server-url: http://localhost:8080/auth
-  realm: realm
-  resource: id
-  public-client: true
-  bearer-only: true
-  ssl-required: external
-  credentials:
-    secret: secret
+  security:
+    oauth2:
+      client:
+        provider:
+          keycloak:
+            issuer-uri: http://keycloak:8080/realms/master
+        registration:
+          shopservice:
+            provider: keycloak
+            authorizationGrantType: client_credentials
+            client-id: shopservice
+            client-secret: secret
+            scope: openid, profile, email
+
+logging:
+  level:
+    io.r2dbc.postgresql.QUERY: DEBUG
+    io.r2dbc.postgresql.PARAM: DEBUG
 
 images:
   upload-directory: ./uploads/
