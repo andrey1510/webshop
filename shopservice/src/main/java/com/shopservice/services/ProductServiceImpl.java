@@ -143,9 +143,17 @@ public class ProductServiceImpl implements ProductService {
             log.info("Upload directory created at: {}", uploadDir);
 
             Path defaultImagePath = uploadDir.resolve("noimage.png");
+
             if (!Files.exists(defaultImagePath)) {
                 try (InputStream is = getClass().getResourceAsStream("/images/noimage.png")) {
                     if (is != null) Files.copy(is, defaultImagePath);
+                }
+            }
+
+            Path sampleImagePath = uploadDir.resolve("sample.png");
+            if (!Files.exists(defaultImagePath)) {
+                try (InputStream is = getClass().getResourceAsStream("/images/sample.png")) {
+                    if (is != null) Files.copy(is, sampleImagePath);
                 }
             }
         } catch (IOException e) {

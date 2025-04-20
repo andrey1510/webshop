@@ -36,7 +36,7 @@ class PaymentServiceImplTest {
                 .id(TEST_USER_ID)
                 .isBalanceSufficient(true)));
 
-        StepVerifier.create(paymentService.checkFunds(TEST_USER_ID, TEST_AMOUNT))
+        StepVerifier.create(paymentService.checkFunds(TEST_AMOUNT))
             .expectNext(true)
             .verifyComplete();
     }
@@ -49,7 +49,7 @@ class PaymentServiceImplTest {
                 .id(TEST_USER_ID)
                 .isBalanceSufficient(false)));
 
-        StepVerifier.create(paymentService.checkFunds(TEST_USER_ID, TEST_LARGE_AMOUNT))
+        StepVerifier.create(paymentService.checkFunds(TEST_LARGE_AMOUNT))
             .expectNext(false)
             .verifyComplete();
     }
@@ -60,7 +60,7 @@ class PaymentServiceImplTest {
         when(paymentApi.checkFunds(TEST_USER_ID, TEST_AMOUNT))
             .thenReturn(Mono.error(new RuntimeException("Service unavailable")));
 
-        StepVerifier.create(paymentService.checkFunds(TEST_USER_ID, TEST_AMOUNT))
+        StepVerifier.create(paymentService.checkFunds(TEST_AMOUNT))
             .expectNext(false)
             .verifyComplete();
     }
@@ -77,7 +77,7 @@ class PaymentServiceImplTest {
                 .id(TEST_USER_ID)
                 .isBalanceSufficient(true)));
 
-        StepVerifier.create(paymentService.processPayment(TEST_USER_ID, TEST_AMOUNT))
+        StepVerifier.create(paymentService.processPayment(TEST_AMOUNT))
             .expectNext(true)
             .verifyComplete();
     }
@@ -94,7 +94,7 @@ class PaymentServiceImplTest {
                 .id(TEST_USER_ID)
                 .isBalanceSufficient(false)));
 
-        StepVerifier.create(paymentService.processPayment(TEST_USER_ID, TEST_LARGE_AMOUNT))
+        StepVerifier.create(paymentService.processPayment(TEST_LARGE_AMOUNT))
             .expectNext(false)
             .verifyComplete();
     }
@@ -112,7 +112,7 @@ class PaymentServiceImplTest {
                 "Service Unavailable",
                 null, null, null)));
 
-        StepVerifier.create(paymentService.processPayment(TEST_USER_ID, TEST_AMOUNT))
+        StepVerifier.create(paymentService.processPayment(TEST_AMOUNT))
             .expectNext(false)
             .verifyComplete();
     }

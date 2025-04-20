@@ -40,7 +40,7 @@ public class CartController {
                     .mapToDouble(item -> item.getProduct().getPrice() * item.getQuantity())
                     .sum();
 
-                return paymentService.checkFunds(1, totalPrice)
+                return paymentService.checkFunds(totalPrice)
                     .onErrorResume(e -> {
                         log.error("Ошибка при запросе к PaymentService: {}", e.getMessage());
                         exchange.getAttributes().put("paymentServiceError", true);
@@ -113,7 +113,7 @@ public class CartController {
                     .mapToDouble(item -> item.getProduct().getPrice() * item.getQuantity())
                     .sum();
 
-                return paymentService.processPayment(1, totalPrice)
+                return paymentService.processPayment(totalPrice)
                     .flatMap(isSufficient -> {
                         if (!isSufficient) {
                             return exchange.getSession()

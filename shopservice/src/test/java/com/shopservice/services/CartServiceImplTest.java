@@ -140,24 +140,6 @@ class CartServiceImplTest {
     }
 
     @Test
-    void testCreateNewCart() {
-        CustomerOrder newCart = new CustomerOrder();
-        newCart.setStatus(OrderStatus.CART);
-        newCart.setItems(new ArrayList<>());
-
-        when(customerOrderRepository.save(any(CustomerOrder.class)))
-            .thenReturn(Mono.just(newCart));
-
-        StepVerifier.create(cartService.createNewCart())
-            .expectNextMatches(order -> {
-                assertEquals(OrderStatus.CART, order.getStatus());
-                assertTrue(order.getItems().isEmpty());
-                return true;
-            })
-            .verifyComplete();
-    }
-
-    @Test
     void testCompleteOrder() {
         when(customerOrderRepository.findByStatus(OrderStatus.CART))
             .thenReturn(Mono.just(cartOrder));

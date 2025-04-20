@@ -31,8 +31,8 @@ CREATE TABLE IF NOT EXISTS users (
     roles VARCHAR(200) NOT NULL DEFAULT 'ROLE_USER'
 );
 
-CREATE INDEX IF NOT EXISTS idx_orders_user_id ON customer_orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON customer_orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(customer_order_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON order_items(product_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON customer_orders(status);

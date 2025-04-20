@@ -11,3 +11,16 @@ spring:
     pool:
       initial-size: 5
       max-size: 10
+  security:
+    oauth2:
+      client:
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8080/realms/master
+        registration:
+          webshop-client:
+            provider: keycloak
+            authorizationGrantType: client_credentials
+            client-id: webshop-client
+            client-secret: XZxKQ8kk6Rrdbe7RnsfwtBTgHkwAqQjm
+            scope: openid, profile, email

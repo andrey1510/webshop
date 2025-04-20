@@ -50,8 +50,8 @@ class CartControllerIntegrationTest {
         databaseInitializer.setDatabasePopulator(populator);
         databaseInitializer.afterPropertiesSet();
 
-        when(paymentService.checkFunds(anyInt(), anyDouble())).thenReturn(Mono.just(true));
-        when(paymentService.processPayment(anyInt(), anyDouble())).thenReturn(Mono.just(true));
+        when(paymentService.checkFunds(anyDouble())).thenReturn(Mono.just(true));
+        when(paymentService.processPayment(anyDouble())).thenReturn(Mono.just(true));
 
     }
 
@@ -135,7 +135,7 @@ class CartControllerIntegrationTest {
 
     @Test
     void testCheckout() {
-        when(paymentService.processPayment(anyInt(), anyDouble())).thenReturn(Mono.just(true));
+        when(paymentService.processPayment(anyDouble())).thenReturn(Mono.just(true));
 
         webTestClient.post()
             .uri("/cart/checkout")
@@ -160,7 +160,7 @@ class CartControllerIntegrationTest {
     @Test
     void testCheckout_InsufficientFunds() {
 
-        when(paymentService.processPayment(anyInt(), anyDouble())).thenReturn(Mono.just(false));
+        when(paymentService.processPayment(anyDouble())).thenReturn(Mono.just(false));
 
         webTestClient.post()
             .uri("/cart/checkout")
@@ -201,7 +201,7 @@ class CartControllerIntegrationTest {
     @Test
     void testCheckout_PaymentServiceFails() {
 
-        when(paymentService.processPayment(anyInt(), anyDouble()))
+        when(paymentService.processPayment(anyDouble()))
             .thenReturn(Mono.error(new RuntimeException("Payment service unavailable")));
 
         webTestClient.post()

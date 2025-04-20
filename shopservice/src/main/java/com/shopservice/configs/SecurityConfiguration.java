@@ -3,6 +3,7 @@ package com.shopservice.configs;
 import com.shopservice.repositories.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -12,8 +13,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
-import org.springframework.security.web.server.authentication.RedirectServerAuthenticationSuccessHandler;
-import org.springframework.security.web.server.authentication.logout.RedirectServerLogoutSuccessHandler;
+import reactor.core.publisher.Mono;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -22,22 +22,36 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
-        http
+        return http
             .authorizeExchange(exchanges -> exchanges
-                .pathMatchers("/", "/products", "/products/**").permitAll()
-                .pathMatchers("/cart/**", "/orders/**").authenticated()
+                .pathMatchers("/", "/users", "/login", "/register", "/static/**", "/register", "/products", "/products/**", "/product-creator").permitAll()
+                .pathMatchers("/cart/**", "/orders/**").hasRole("USER")
                 .anyExchange().authenticated()
             )
             .formLogin(form -> form
                 .loginPage("/login")
-                .authenticationSuccessHandler(new RedirectServerAuthenticationSuccessHandler("/products"))
+                .authenticationSuccessHandler((exchange, authentication) ->
+                    Mono.empty()
+                )
+                .authenticationFailureHandler((exchange, e) ->
+                    Mono.error(e)
+                )
             )
             .logout(logout -> logout
                 .logoutUrl("/logout")
-                .logoutSuccessHandler(new RedirectServerLogoutSuccessHandler())
-            );
-
-        return http.build();
+                .logoutSuccessHandler((exchange, authentication) ->
+                    Mono.empty()
+                )
+            )
+            .csrf(csrf -> csrf.disable())
+            .exceptionHandling(handling -> handling
+                .authenticationEntryPoint((exchange, e) ->
+                    Mono.fromRunnable(() -> {
+                        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                    })
+                )
+            )
+            .build();
     }
 
     @Bean
