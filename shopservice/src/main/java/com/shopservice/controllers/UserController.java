@@ -5,13 +5,14 @@ import com.shopservice.services.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.util.Map;
 
 @Slf4j
 @Controller
@@ -74,18 +75,32 @@ public class UserController {
 
     @GetMapping("/users")
     public Mono<Void> listAllUsers() {
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        String testRawPassword = "password";
+
         return userRepository.findAll()
             .collectList()
             .doOnNext(users -> {
                 System.out.println("\n=== Список всех пользователей ===");
-                users.forEach(user ->
+                System.out.println("Тестовый пароль для проверки: " + testRawPassword);
+                System.out.println("--------------------------------");
+
+                users.forEach(user -> {
+                    boolean passwordMatches = passwordEncoder.matches(testRawPassword, user.getPassword());
+
                     System.out.printf(
-                        "ID: %d, Username: %s, Roles: %s, Enabled: %s%n",
+                        "ID: %d | Username: %s | Roles: %s | Enabled: %s%n" +
+                            "Encoded password: %s%n" +
+                            "Matches test password: %s%n" +
+                            "--------------------------------%n",
                         user.getId(),
                         user.getUsername(),
                         user.getRoles(),
-                        user.isEnabled() ? "Да" : "Нет"
-                    ));
+                        user.isEnabled() ? "Да" : "Нет",
+                        user.getPassword(),
+                        passwordMatches ? "ДА" : "НЕТ"
+                    );
+                });
                 System.out.println("==============================\n");
             })
             .then(Mono.empty());

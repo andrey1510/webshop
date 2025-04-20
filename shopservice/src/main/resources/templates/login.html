@@ -1,28 +1,25 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
-    <title>Login</title>
+    <title>Логин</title>
 </head>
 <body>
-<h1>Login</h1>
-
-<div th:if="${param.error}" style="color:red;">
-    Invalid username or password
-</div>
+<h1>Логин</h1>
 
 <form method="post" action="/login">
     <div>
-        <label for="username">Username:</label>
+        <label for="username">Логин:</label>
         <input type="text" id="username" name="username" required>
     </div>
     <div>
-        <label for="password">Password:</label>
+        <label for="password">Пароль:</label>
         <input type="password" id="password" name="password" required>
     </div>
-    <button type="submit">Login</button>
+    <button type="submit">Логин</button>
 </form>
 
-<p>Don't have an account? <a href="/register">Register</a></p>
+<p>Не зарегистрированы? <a href="/register">Регистрация</a></p>
 </body>
 </html>

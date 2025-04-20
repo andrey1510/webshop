@@ -1,5 +1,7 @@
 package com.shopservice.repositories;
 
+import com.shopservice.configs.TestDatabaseConfig;
+import com.shopservice.configs.TestSecurityConfig;
 import com.shopservice.entities.Product;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,7 +16,7 @@ import java.util.List;
 
 @DataR2dbcTest
 @ActiveProfiles("test")
-@Import(OrderItemProductRepository.class)
+@Import({OrderItemProductRepository.class, TestDatabaseConfig.class, TestSecurityConfig.class})
 class OrderItemProductRepositoryTest {
 
     @Autowired

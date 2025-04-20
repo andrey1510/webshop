@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(100) NOT NULL,
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
-    roles VARCHAR(200) NOT NULL DEFAULT 'ROLE_USER'
+    roles VARCHAR(200) NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);

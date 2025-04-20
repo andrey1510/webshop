@@ -1,14 +1,12 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <title>Регистрация</title>
 </head>
 <body>
 <h1>Регистрация</h1>
-
-<!-- Сообщение об ошибке -->
-<div th:if="${error}" style="color:red;" th:text="${error}"></div>
 
 <form method="post" action="/register">
     <div>

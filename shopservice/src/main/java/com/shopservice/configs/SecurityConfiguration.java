@@ -13,7 +13,10 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.header.ReferrerPolicyServerHttpHeadersWriter;
 import reactor.core.publisher.Mono;
+
+import java.net.URI;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -30,20 +33,25 @@ public class SecurityConfiguration {
             )
             .formLogin(form -> form
                 .loginPage("/login")
-                .authenticationSuccessHandler((exchange, authentication) ->
-                    Mono.empty()
-                )
-                .authenticationFailureHandler((exchange, e) ->
-                    Mono.error(e)
-                )
+                .authenticationSuccessHandler((exchange, authentication) -> {
+                    exchange.getExchange().getResponse().setStatusCode(HttpStatus.FOUND);
+                    exchange.getExchange().getResponse().getHeaders().setLocation(URI.create("/products"));
+                    return Mono.empty();
+                })
             )
             .logout(logout -> logout
                 .logoutUrl("/logout")
-                .logoutSuccessHandler((exchange, authentication) ->
-                    Mono.empty()
-                )
+                .logoutSuccessHandler((exchange, authentication) -> {
+                    exchange.getExchange().getResponse().setStatusCode(HttpStatus.FOUND);
+                    exchange.getExchange().getResponse().getHeaders().setLocation(URI.create("/products"));
+                    return Mono.empty();
+                })
             )
             .csrf(csrf -> csrf.disable())
+            .headers(headers -> headers
+                .frameOptions(frameOptions -> frameOptions.disable())
+                .referrerPolicy(
+                    referrer -> referrer.policy(ReferrerPolicyServerHttpHeadersWriter.ReferrerPolicy.SAME_ORIGIN)))
             .exceptionHandling(handling -> handling
                 .authenticationEntryPoint((exchange, e) ->
                     Mono.fromRunnable(() -> {

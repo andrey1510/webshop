@@ -1,5 +1,7 @@
 package com.shopservice.repositories;
 
+import com.shopservice.configs.TestDatabaseConfig;
+import com.shopservice.configs.TestSecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
@@ -11,7 +13,7 @@ import reactor.test.StepVerifier;
 
 @DataR2dbcTest
 @ActiveProfiles("test")
-@Import(ProductPreviewDtoRepository.class)
+@Import({ProductPreviewDtoRepository.class, TestDatabaseConfig.class, TestSecurityConfig.class})
 class ProductPreviewDtoRepositoryTest {
 
     @Autowired

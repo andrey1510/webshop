@@ -34,6 +34,20 @@
             margin-bottom: 20px;
             position: relative; /
         }
+        .auth-section {
+            margin: 5px 0;
+            padding: 5px;
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+        .auth-section input {
+            margin: 0 3px;
+            padding: 3px;
+        }
+        .auth-section button {
+            margin: 0 3px;
+            background-color: #4CAF50;
+        }
         .button-container {
             position: fixed;
             top: 20px;
@@ -64,7 +78,17 @@
     </style>
 
 </head>
+
 <body>
+
+<header class="auth-panel">
+    <div class="auth-section" sec:authorize="isAuthenticated()">
+        <span style="font-size: 0.9em;">Вы вошли как: <span sec:authentication="name"></span></span>
+        <form th:action="@{/logout}" method="post" style="display: inline-block;">
+            <button type="submit" style="padding: 2px 5px; margin-left: 5px;">Выйти</button>
+        </form>
+    </div>
+</header>
 
 <!-- Переход на другие страницы-->
 <div class="button-container">
