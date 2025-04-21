@@ -1,9 +1,12 @@
 package com.shopservice.repositories;
 
+import com.shopservice.configs.TestDatabaseConfig;
+import com.shopservice.configs.TestSecurityConfig;
 import com.shopservice.entities.OrderStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import reactor.test.StepVerifier;
@@ -12,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DataR2dbcTest
 @ActiveProfiles("test")
+@Import({TestDatabaseConfig.class, TestSecurityConfig.class})
 @SpringJUnitConfig
 class CustomerOrderRepositoryTest {
 
@@ -19,7 +23,7 @@ class CustomerOrderRepositoryTest {
     private CustomerOrderRepository customerOrderRepository;
 
     @Test
-    void testFindByStatus() {
+    void findByStatus() {
         StepVerifier.create(customerOrderRepository.findByStatus(OrderStatus.CART))
             .expectNextMatches(order -> {
                 assertEquals(OrderStatus.CART, order.getStatus());
@@ -30,7 +34,7 @@ class CustomerOrderRepositoryTest {
     }
 
     @Test
-    void testFindByIdAndStatus() {
+    void findByIdAndStatus() {
         StepVerifier.create(customerOrderRepository.findByIdAndStatus(7, OrderStatus.COMPLETED))
             .expectNextMatches(order -> {
                 assertEquals(OrderStatus.COMPLETED, order.getStatus());
@@ -41,13 +45,13 @@ class CustomerOrderRepositoryTest {
     }
 
     @Test
-    void testFindByIdAndStatus_WrongStatus() {
+    void findByIdAndStatus_WrongStatus() {
         StepVerifier.create(customerOrderRepository.findByIdAndStatus(6, OrderStatus.COMPLETED))
             .verifyComplete();
     }
 
     @Test
-    void testFindAllByStatus() {
+    void findAllByStatus() {
         StepVerifier.create(customerOrderRepository.findAllByStatus(OrderStatus.COMPLETED).collectList())
             .expectNextMatches(orders -> {
                 if (orders.size() != 2) return false;
@@ -58,7 +62,7 @@ class CustomerOrderRepositoryTest {
     }
 
     @Test
-    void testFindByIdAndStatus_WrongId() {
+    void findByIdAndStatus_WrongId() {
         StepVerifier.create(customerOrderRepository.findByIdAndStatus(999, OrderStatus.COMPLETED))
             .verifyComplete();
     }

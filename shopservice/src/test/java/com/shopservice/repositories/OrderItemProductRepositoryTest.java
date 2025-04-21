@@ -1,5 +1,7 @@
 package com.shopservice.repositories;
 
+import com.shopservice.configs.TestDatabaseConfig;
+import com.shopservice.configs.TestSecurityConfig;
 import com.shopservice.entities.Product;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,7 +16,7 @@ import java.util.List;
 
 @DataR2dbcTest
 @ActiveProfiles("test")
-@Import(OrderItemProductRepository.class)
+@Import({OrderItemProductRepository.class, TestDatabaseConfig.class, TestSecurityConfig.class})
 class OrderItemProductRepositoryTest {
 
     @Autowired
@@ -28,7 +30,7 @@ class OrderItemProductRepositoryTest {
     }
 
     @Test
-    void testFindByCustomerOrderIdWithProduct() {
+    void findByCustomerOrderIdWithProduct() {
         StepVerifier.create(repository.findByCustomerOrderIdWithProduct(8).collectList())
             .expectNextMatches(items -> items.stream()
                 .filter(item -> item.getProductId() == 8)
@@ -44,7 +46,7 @@ class OrderItemProductRepositoryTest {
     }
 
     @Test
-    void testFindByCustomerOrderIdWithProduct_CheckQuantities() {
+    void findByCustomerOrderIdWithProduct_CheckQuantities() {
         StepVerifier.create(repository.findByCustomerOrderIdWithProduct(6).collectList())
             .expectNextMatches(items -> items.stream()
                 .filter(item -> item.getProductId() == 6)
@@ -60,7 +62,7 @@ class OrderItemProductRepositoryTest {
     }
 
     @Test
-    void testFindByCustomerOrderIdWithProduct_OrderNotExists() {
+    void findByCustomerOrderIdWithProduct_OrderNotExists() {
         StepVerifier.create(repository.findByCustomerOrderIdWithProduct(999).collectList())
             .expectNextMatches(List::isEmpty)
             .verifyComplete();

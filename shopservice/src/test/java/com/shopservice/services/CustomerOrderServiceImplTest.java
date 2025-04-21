@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -28,6 +29,9 @@ class CustomerOrderServiceImplTest {
     @Mock
     private OrderItemProductRepository orderItemProductRepository;
 
+    @Mock
+    private UserService userService;
+
     @InjectMocks
     private CustomerOrderServiceImpl customerOrderService;
 
@@ -35,18 +39,23 @@ class CustomerOrderServiceImplTest {
     private CustomerOrder completedOrder2;
     private OrderItem orderItem1;
     private OrderItem orderItem2;
+    private static final Integer TEST_USER_ID = 1;
 
     @BeforeEach
     void setUp() {
+        lenient().when(userService.getCurrentUserId()).thenReturn(Mono.just(TEST_USER_ID));
+
         completedOrder1 = new CustomerOrder();
         completedOrder1.setId(1);
         completedOrder1.setStatus(OrderStatus.COMPLETED);
         completedOrder1.setCompletedOrderPrice(100.0);
+        completedOrder1.setUserId(TEST_USER_ID);
 
         completedOrder2 = new CustomerOrder();
         completedOrder2.setId(2);
         completedOrder2.setStatus(OrderStatus.COMPLETED);
         completedOrder2.setCompletedOrderPrice(200.0);
+        completedOrder2.setUserId(TEST_USER_ID);
 
         orderItem1 = new OrderItem();
         orderItem1.setId(1);
@@ -58,8 +67,8 @@ class CustomerOrderServiceImplTest {
     }
 
     @Test
-    void testGetCompletedOrderById() {
-        when(customerOrderRepository.findByIdAndStatus(1, OrderStatus.COMPLETED))
+    void getCompletedOrderById() {
+        when(customerOrderRepository.findByIdAndStatusAndUserId(1, OrderStatus.COMPLETED, TEST_USER_ID))
             .thenReturn(Mono.just(completedOrder1));
         when(orderItemProductRepository.findByCustomerOrderIdWithProduct(1))
             .thenReturn(Flux.just(orderItem1, orderItem2));
@@ -68,14 +77,15 @@ class CustomerOrderServiceImplTest {
             .expectNextMatches(order -> {
                 assertEquals(1, order.getId());
                 assertEquals(2, order.getItems().size());
+                assertEquals(TEST_USER_ID, order.getUserId());
                 return true;
             })
             .verifyComplete();
     }
 
     @Test
-    void testGetCompletedOrderById_OrderNotExists() {
-        when(customerOrderRepository.findByIdAndStatus(999, OrderStatus.COMPLETED))
+    void getCompletedOrderById_OrderNotExists() {
+        when(customerOrderRepository.findByIdAndStatusAndUserId(999, OrderStatus.COMPLETED, TEST_USER_ID))
             .thenReturn(Mono.empty());
 
         StepVerifier.create(customerOrderService.getCompletedOrderById(999))
@@ -84,19 +94,19 @@ class CustomerOrderServiceImplTest {
     }
 
     @Test
-    void testGetCompletedOrders() {
-        when(customerOrderRepository.findAllByStatus(OrderStatus.COMPLETED))
+    void getCompletedOrders() {
+        when(customerOrderRepository.findAllByStatusAndUserId(OrderStatus.COMPLETED, TEST_USER_ID))
             .thenReturn(Flux.just(completedOrder1, completedOrder2));
 
         StepVerifier.create(customerOrderService.getCompletedOrders())
-            .expectNext(completedOrder1)
-            .expectNext(completedOrder2)
+            .expectNextMatches(order -> order.getId() == 1)
+            .expectNextMatches(order -> order.getId() == 2)
             .verifyComplete();
     }
 
     @Test
-    void testGetCompletedOrders_NoOrders() {
-        when(customerOrderRepository.findAllByStatus(OrderStatus.COMPLETED))
+    void getCompletedOrders_NoOrders() {
+        when(customerOrderRepository.findAllByStatusAndUserId(OrderStatus.COMPLETED, TEST_USER_ID))
             .thenReturn(Flux.empty());
 
         StepVerifier.create(customerOrderService.getCompletedOrders())
@@ -104,7 +114,7 @@ class CustomerOrderServiceImplTest {
     }
 
     @Test
-    void testGetTotalPriceOfCompletedOrders() {
+    void getTotalPriceOfCompletedOrders() {
         when(customerOrderRepository.findAllByStatus(OrderStatus.COMPLETED))
             .thenReturn(Flux.just(completedOrder1, completedOrder2));
 
@@ -114,7 +124,7 @@ class CustomerOrderServiceImplTest {
     }
 
     @Test
-    void testGetTotalPriceOfCompletedOrders_NoOrders() {
+    void getTotalPriceOfCompletedOrders_NoOrders() {
         when(customerOrderRepository.findAllByStatus(OrderStatus.COMPLETED))
             .thenReturn(Flux.empty());
 

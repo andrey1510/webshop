@@ -17,11 +17,15 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
 
     private final CustomerOrderRepository customerOrderRepository;
     private final OrderItemProductRepository orderItemProductRepository;
+    private final UserService userService;
 
     @Override
     public Mono<CustomerOrder> getCompletedOrderById(Integer orderId) {
-        return customerOrderRepository.findByIdAndStatus(orderId, OrderStatus.COMPLETED)
-            .switchIfEmpty(Mono.error(new CompletedCustomerOrderNotFoundException("Заказ не найден")))
+        return userService.getCurrentUserId()
+            .flatMap(userId ->
+                customerOrderRepository.findByIdAndStatusAndUserId(orderId, OrderStatus.COMPLETED, userId)
+                    .switchIfEmpty(Mono.error(new CompletedCustomerOrderNotFoundException("Заказ не найден")))
+            )
             .flatMap(order ->
                 orderItemProductRepository.findByCustomerOrderIdWithProduct(orderId)
                     .collectList()
@@ -32,7 +36,13 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
 
     @Override
     public Flux<CustomerOrder> getCompletedOrders() {
-        return customerOrderRepository.findAllByStatus(OrderStatus.COMPLETED);
+        return userService.getCurrentUserId()
+            .flatMapMany(userId ->
+                customerOrderRepository.findAllByStatusAndUserId(
+                    OrderStatus.COMPLETED,
+                    userId
+                )
+            );
     }
 
     @Override

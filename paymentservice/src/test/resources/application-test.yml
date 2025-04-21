@@ -16,3 +16,19 @@ spring:
       mode: never
       schema-locations: schema.sql
       data-locations: data.sql
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/master
+      client:
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8080/realms/master
+        registration:
+          webshop-client:
+            provider: keycloak
+            authorizationGrantType: client_credentials
+            client-id: webshop-client
+            client-secret: XZxKQ8kk6Rrdbe7RnsfwtBTgHkwAqQjm
+            scope: openid, profile, email

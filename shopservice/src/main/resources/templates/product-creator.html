@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <title>Создание товара</title>
@@ -73,7 +74,7 @@
     <button class="close-button" onclick="this.parentElement.style.display='none';">&times;</button>
 </div>
 
-<form th:action="@{/product-creator}" method="post" enctype="multipart/form-data">
+<form th:action="@{/product-creator}" method="post" enctype="multipart/form-data" sec:csrfThymeleaf="true">
     <!-- Поле title -->
     <div class="form-group">
         <label for="title">Название товара:</label>

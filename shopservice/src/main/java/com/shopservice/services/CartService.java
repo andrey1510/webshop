@@ -14,8 +14,6 @@ public interface CartService {
 
     Mono<Map<Integer, Integer>> getCartProductsQuantity();
 
-    Mono<CustomerOrder> createNewCart();
-
     Mono<CustomerOrder> completeOrder();
 
     Mono<Void> addItemToCart(Integer productId, Integer quantity);

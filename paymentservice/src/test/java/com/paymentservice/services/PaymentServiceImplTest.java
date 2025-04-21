@@ -46,7 +46,7 @@ class PaymentServiceImplTest {
     }
 
     @Test
-    void testGetCurrentBalance() {
+    void getCurrentBalance() {
         when(paymentRepository.findById(TEST_USER_ID))
             .thenReturn(Mono.just(userWithBalance));
 
@@ -66,7 +66,7 @@ class PaymentServiceImplTest {
     }
 
     @Test
-    void testHasSufficientFunds_BalanceInsufficient() {
+    void hasSufficientFunds_BalanceInsufficient() {
         when(paymentRepository.findById(TEST_USER_ID))
             .thenReturn(Mono.just(userWithLowBalance));
 
@@ -76,7 +76,7 @@ class PaymentServiceImplTest {
     }
 
     @Test
-    void testProcessPayment() {
+    void processPayment() {
         when(paymentRepository.findById(TEST_USER_ID))
             .thenReturn(Mono.just(userWithBalance));
         when(paymentRepository.save(any(UserBalance.class)))
@@ -87,7 +87,7 @@ class PaymentServiceImplTest {
     }
 
     @Test
-    void testProcessPayment_InsufficientFunds() {
+    void processPayment_InsufficientFunds() {
         when(paymentRepository.findById(TEST_USER_ID))
             .thenReturn(Mono.just(userWithLowBalance));
 
@@ -99,7 +99,7 @@ class PaymentServiceImplTest {
     }
 
     @Test
-    void testDeductFromBalance() {
+    void deductFromBalance() {
         UserBalance updatedBalance = new UserBalance(TEST_USER_ID, TEST_BALANCE - TEST_SMALL_AMOUNT);
 
         when(paymentRepository.findById(TEST_USER_ID))

@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+>
 <head>
     <meta charset="UTF-8">
     <title>Корзина</title>
@@ -7,6 +9,20 @@
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
+        }
+        .auth-section {
+            margin: 5px 0;
+            padding: 5px;
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+        .auth-section input {
+            margin: 0 3px;
+            padding: 3px;
+        }
+        .auth-section button {
+            margin: 0 3px;
+            background-color: #4CAF50;
         }
         .button-container {
             position: fixed;
@@ -97,6 +113,19 @@
     </script>
 </head>
 <body>
+
+
+<!-- Авторизация-->
+
+<header class="auth-panel">
+    <div class="auth-section" sec:authorize="isAuthenticated()">
+        <span style="font-size: 0.9em;">Вы вошли как: <span sec:authentication="name"></span></span>
+        <form th:action="@{/logout}" method="post" style="display: inline-block;">
+            <button type="submit" style="padding: 2px 5px; margin-left: 5px;">Выйти</button>
+        </form>
+    </div>
+</header>
+
 <h1>Корзина</h1>
 
 <!-- Переход на другие страницы-->

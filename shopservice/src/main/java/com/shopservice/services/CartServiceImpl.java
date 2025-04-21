@@ -35,28 +35,33 @@ public class CartServiceImpl implements CartService{
     private final OrderItemProductRepository orderItemProductRepository;
 
     private final ProductService productService;
+    private final UserService userService;
 
     @Override
     @Cacheable(key = "'user:' + #result?.id", unless = "#result?.status != T(com.shopservice.entities.OrderStatus).CART")
     public Mono<CustomerOrder> getCurrentCartWithProducts() {
-        return customerOrderRepository.findByStatus(OrderStatus.CART)
-            .switchIfEmpty(createNewCart())
-            .flatMap(order ->
-                orderItemProductRepository.findByCustomerOrderIdWithProduct(order.getId())
-                    .collectList()
-                    .doOnNext(order::setItems)
-                    .thenReturn(order)
+        return userService.getCurrentUserId()
+            .flatMap(userId -> customerOrderRepository.findByStatusAndUserId(OrderStatus.CART, userId)
+                .switchIfEmpty(createNewCart(userId))
+                .flatMap(order ->
+                    orderItemProductRepository.findByCustomerOrderIdWithProduct(order.getId())
+                        .collectList()
+                        .doOnNext(order::setItems)
+                        .thenReturn(order)
+                )
             );
     }
-
     @Override
     public Mono<CustomerOrder> getCurrentCartNoProducts() {
-        return customerOrderRepository.findByStatus(OrderStatus.CART)
-            .switchIfEmpty(createNewCart())
-            .flatMap(order -> orderItemRepository.findByCustomerOrderId(order.getId())
-                .collectList()
-                .doOnNext(items -> order.setItems(items != null ? items : new ArrayList<>()))
-                .thenReturn(order));
+        return userService.getCurrentUserId()
+            .flatMap(userId -> customerOrderRepository.findByStatusAndUserId(OrderStatus.CART, userId)
+                .switchIfEmpty(createNewCart(userId))
+                .flatMap(order -> orderItemRepository.findByCustomerOrderId(order.getId())
+                    .collectList()
+                    .doOnNext(items -> order.setItems(items != null ? items : new ArrayList<>()))
+                    .thenReturn(order)
+                )
+            );
     }
 
     @Override
@@ -71,11 +76,10 @@ public class CartServiceImpl implements CartService{
             .defaultIfEmpty(Collections.emptyMap());
     }
 
-    @Override
-    @CacheEvict(key = "'user:' + #result?.id")
-    public Mono<CustomerOrder> createNewCart() {
+    private Mono<CustomerOrder> createNewCart(Integer userId) {
         CustomerOrder orderInCart = new CustomerOrder();
         orderInCart.setStatus(OrderStatus.CART);
+        orderInCart.setUserId(userId);
         orderInCart.setItems(new ArrayList<>());
         return customerOrderRepository.save(orderInCart);
     }
@@ -83,20 +87,23 @@ public class CartServiceImpl implements CartService{
     @Override
     @CacheEvict(key = "'user:' + #result?.id", beforeInvocation = true)
     public Mono<CustomerOrder> completeOrder() {
-        return getCurrentCartWithProducts()
-            .flatMap(orderInCart -> {
-                if (orderInCart.getItems().isEmpty()) return Mono.error(new CartIsEmptyException("Корзина пустая."));
+        return userService.getCurrentUserId()
+            .flatMap(userId -> getCurrentCartWithProducts()
+                .flatMap(orderInCart -> {
+                    if (orderInCart.getItems().isEmpty())
+                        return Mono.error(new CartIsEmptyException("Корзина пустая."));
 
-                orderInCart.setStatus(OrderStatus.COMPLETED);
-                orderInCart.setTimestamp(LocalDateTime.now());
-                orderInCart.setCompletedOrderPrice(orderInCart.getItems().stream()
-                    .mapToDouble(item -> item.getProduct().getPrice() * item.getQuantity())
-                    .sum());
+                    orderInCart.setStatus(OrderStatus.COMPLETED);
+                    orderInCart.setTimestamp(LocalDateTime.now());
+                    orderInCart.setCompletedOrderPrice(orderInCart.getItems().stream()
+                        .mapToDouble(item -> item.getProduct().getPrice() * item.getQuantity())
+                        .sum());
 
-                return customerOrderRepository.save(orderInCart)
-                    .then(createNewCart())
-                    .thenReturn(orderInCart);
-            });
+                    return customerOrderRepository.save(orderInCart)
+                        .then(createNewCart(userId))
+                        .thenReturn(orderInCart);
+                })
+            );
     }
 
     @Override

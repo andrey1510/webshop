@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <title>Витрина товаров</title>
@@ -48,7 +49,20 @@
             cursor: pointer;
             text-align: center;
         }
-
+        .auth-section {
+            margin: 5px 0;
+            padding: 5px;
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+        .auth-section input {
+            margin: 0 3px;
+            padding: 3px;
+        }
+        .auth-section button {
+            margin: 0 3px;
+            background-color: #4CAF50;
+        }
         .button-container button:hover {
             background-color: #45a049;
         }
@@ -92,7 +106,10 @@
                     const productId = this.getAttribute('data-product-id');
                     const quantity = this.getAttribute('data-quantity');
                     fetch('/cart/update?productId=' + productId + '&quantity=' + quantity, {
-                        method: 'POST'
+                        method: 'POST',
+                        headers: {
+                            'Referer': window.location.href
+                        }
                     })
                         .then(response => {
                             if (response.redirected) {
@@ -103,12 +120,16 @@
                 });
             });
 
+
             // Обработчик для удаления из корзины
             document.querySelectorAll('.remove-from-cart-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const productId = this.getAttribute('data-product-id');
                     fetch('/cart/remove?productId=' + productId, {
-                        method: 'POST'
+                        method: 'POST',
+                        headers: {
+                            'Referer': window.location.href
+                        }
                     })
                         .then(response => {
                             if (response.redirected) {
@@ -129,15 +150,36 @@
     </script>
 </head>
 <body>
+
+<!-- Авторизация-->
+
+<header class="auth-panel">
+    <div class="auth-section" >
+        <form method="post" action="/login" style="display: inline-block;">
+            <input type="text" name="username" placeholder="Логин" required style="width: 100px;">
+            <input type="password" name="password" placeholder="Пароль" required style="width: 100px;">
+            <button type="submit" style="padding: 2px 5px;">Войти</button>
+<!--            <a th:href="@{/register}" style="font-size: 0.8em;">Регистрация</a>-->
+        </form>
+    </div>
+
+    <div class="auth-section" sec:authorize="isAuthenticated()">
+        <span style="font-size: 0.9em;">Вы вошли как: <span sec:authentication="name"></span></span>
+        <form th:action="@{/logout}" method="post" style="display: inline-block;">
+            <button type="submit" style="padding: 2px 5px; margin-left: 5px;">Выйти</button>
+        </form>
+    </div>
+</header>
+
 <h1>Витрина товаров</h1>
 
 <!-- Переход на другие страницы-->
 <div class="button-container">
     <form th:action="@{/cart}" method="get">
-        <button type="submit">Корзина</button>
+        <button type="submit" sec:authorize="isAuthenticated()">Корзина</button>
     </form>
     <form th:action="@{/orders}" method="get">
-        <button type="submit">Оформленные заказы</button>
+        <button type="submit" sec:authorize="isAuthenticated()">Оформленные заказы</button>
     </form>
 </div>
 
@@ -181,7 +223,7 @@
         </div>
 
         <!-- Управление корзиной -->
-        <div class="cart-controls">
+        <div class="cart-controls" sec:authorize="isAuthenticated()">
             <!-- Если товар уже в корзине -->
             <div th:if="${cartProductsQuantities.containsKey(product.id)}">
                 <button type="button"

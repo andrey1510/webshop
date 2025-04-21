@@ -31,6 +31,8 @@ public class CustomerOrder implements Serializable {
     @Id
     private Integer id;
 
+    private Integer userId;
+
     private OrderStatus status;
 
     private LocalDateTime timestamp;

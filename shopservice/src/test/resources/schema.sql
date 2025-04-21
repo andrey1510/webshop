@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS products (
 
 CREATE TABLE IF NOT EXISTS customer_orders (
     id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
     status VARCHAR(20) NOT NULL,
     timestamp TIMESTAMP,
     completed_order_price DECIMAL(10, 2)
@@ -22,6 +23,16 @@ CREATE TABLE IF NOT EXISTS order_items (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(100) NOT NULL,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    roles VARCHAR(200) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON customer_orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(customer_order_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON order_items(product_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON customer_orders(status);

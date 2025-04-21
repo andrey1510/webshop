@@ -1,0 +1,29 @@
+server:
+  port: 8889
+
+spring:
+  application:
+    name: paymentservice
+  r2dbc:
+    url: r2dbc:h2:mem:///testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    pool:
+      initial-size: 5
+      max-size: 10
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://keycloak:8080/realms/master
+      client:
+        provider:
+          keycloak:
+            issuer-uri: http://keycloak:8080/realms/master
+        registration:
+          webshop-client:
+            provider: keycloak
+            authorizationGrantType: client_credentials
+            client-id: webshop-client
+            client-secret: XZxKQ8kk6Rrdbe7RnsfwtBTgHkwAqQjm
+            scope: openid, profile, email

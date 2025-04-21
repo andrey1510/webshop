@@ -13,7 +13,7 @@ spring:
     redis:
       key-prefix: "shop:"
       use-key-prefix: true
-      time-to-live: 1h
+      time-to-live: 3m
       cache-null-values: false
   webflux:
     hiddenmethod:
@@ -37,7 +37,22 @@ spring:
     encoding: UTF-8
     reactive:
       max-chunk-size: 8KB
-
+  main:
+    web-application-type: reactive
+    allow-bean-definition-overriding: false
+  security:
+    oauth2:
+      client:
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8080/realms/master
+        registration:
+          webshop-client:
+            provider: keycloak
+            authorizationGrantType: client_credentials
+            client-id: webshop-client
+            client-secret: XZxKQ8kk6Rrdbe7RnsfwtBTgHkwAqQjm
+            scope: openid, profile, email
 
 images:
   upload-directory: ./uploads/

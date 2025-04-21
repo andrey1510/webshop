@@ -1,5 +1,7 @@
 package com.shopservice.repositories;
 
+import com.shopservice.configs.TestDatabaseConfig;
+import com.shopservice.configs.TestSecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
@@ -11,7 +13,7 @@ import reactor.test.StepVerifier;
 
 @DataR2dbcTest
 @ActiveProfiles("test")
-@Import(ProductPreviewDtoRepository.class)
+@Import({ProductPreviewDtoRepository.class, TestDatabaseConfig.class, TestSecurityConfig.class})
 class ProductPreviewDtoRepositoryTest {
 
     @Autowired
@@ -20,7 +22,7 @@ class ProductPreviewDtoRepositoryTest {
     private final Pageable defaultPageable = PageRequest.of(0, 10);
 
     @Test
-    void testFindAllProductPreviewDtos() {
+    void findAllProductPreviewDtos() {
         StepVerifier.create(repository.findAllProductPreviewDtos(defaultPageable).collectList())
             .expectNextMatches(list -> list.size() == 4 &&
                 list.stream().anyMatch(dto -> dto.title().equals("Ноутбук")) &&
@@ -31,7 +33,7 @@ class ProductPreviewDtoRepositoryTest {
     }
 
     @Test
-    void testFindProductPreviewDtosByPriceGreaterThan() {
+    void findProductPreviewDtosByPriceGreaterThan() {
         StepVerifier.create(repository.findProductPreviewDtosByPriceGreaterThan(400.0, defaultPageable).collectList())
             .expectNextMatches(list -> list.size() == 2 &&
                 list.stream().anyMatch(dto -> dto.title().equals("Ноутбук")) &&
@@ -40,7 +42,7 @@ class ProductPreviewDtoRepositoryTest {
     }
 
     @Test
-    void testFindProductPreviewDtosByPriceLessThan() {
+    void findProductPreviewDtosByPriceLessThan() {
         StepVerifier.create(repository.findProductPreviewDtosByPriceLessThan(400.0, defaultPageable)
                 .collectList())
             .expectNextMatches(list -> list.size() == 2 &&
@@ -50,7 +52,7 @@ class ProductPreviewDtoRepositoryTest {
     }
 
     @Test
-    void testFindProductPreviewDtosByPriceBetween() {
+    void findProductPreviewDtosByPriceBetween() {
         StepVerifier.create(repository
                 .findProductPreviewDtosByPriceBetween(200.0, 500.0, defaultPageable).collectList())
             .expectNextMatches(list -> list.size() == 3 &&

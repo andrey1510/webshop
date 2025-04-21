@@ -30,7 +30,7 @@ public class ImageUtilsTest {
     }
 
     @Test
-    public void testIsValidImageExtension() {
+    public void isValidImageExtension() {
         assertTrue(ImageUtils.isValidImageExtension("image.jpg"));
         assertTrue(ImageUtils.isValidImageExtension("image.jpeg"));
         assertTrue(ImageUtils.isValidImageExtension("image.png"));
@@ -38,7 +38,7 @@ public class ImageUtilsTest {
     }
 
     @Test
-    public void testIsValidImageSize() {
+    public void isValidImageSize() {
         long validSize = 2 * 1024 * 1024; // 2 MB
         long oversized = 8 * 1024 * 1024; // 8 MB
         assertTrue(ImageUtils.isValidImageSize(validSize));
@@ -46,7 +46,7 @@ public class ImageUtilsTest {
     }
 
     @Test
-    public void testGenerateUniqueImageName() {
+    public void generateUniqueImageName() {
         String originalFileName = "imageName.jpg";
         String uniqueName = ImageUtils.generateUniqueImageName(originalFileName);
         assertNotNull(uniqueName);
@@ -55,7 +55,7 @@ public class ImageUtilsTest {
 
     @Test
     @SneakyThrows
-    public void testDeleteImageIfExists() {
+    public void deleteImageIfExists() {
         assertTrue(Files.exists(oldFilePath));
         ImageUtils.deleteImageIfExists(oldFilePath.toString());
         assertFalse(Files.exists(oldFilePath));

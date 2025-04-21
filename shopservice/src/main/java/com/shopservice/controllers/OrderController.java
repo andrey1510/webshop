@@ -4,6 +4,7 @@ import com.shopservice.exceptions.CompletedCustomerOrderNotFoundException;
 import com.shopservice.services.CustomerOrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +21,7 @@ public class OrderController {
 
     private final CustomerOrderService customerOrderService;
 
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/{id}")
     public Mono<Rendering> getCompletedOrder(@PathVariable("id") Integer orderId) {
         return customerOrderService.getCompletedOrderById(orderId)
@@ -29,6 +31,7 @@ public class OrderController {
             .switchIfEmpty(Mono.error(new CompletedCustomerOrderNotFoundException("Заказ не найден")));
     }
 
+    @PreAuthorize("hasRole('USER')")
     @GetMapping
     public Mono<Rendering> getAllCompletedOrders() {
         return customerOrderService.getCompletedOrders()
