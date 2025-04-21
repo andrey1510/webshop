@@ -15,11 +15,11 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8080/realms/master
+          issuer-uri: http://keycloak:8080/realms/master
       client:
         provider:
           keycloak:
-            issuer-uri: http://localhost:8080/realms/master
+            issuer-uri: http://keycloak:8080/realms/master
         registration:
           webshop-client:
             provider: keycloak

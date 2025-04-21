@@ -22,7 +22,7 @@ class OrderItemRepositoryTest {
     private OrderItemRepository orderItemRepository;
 
     @Test
-    void testFindByCustomerOrderId() {
+    void findByCustomerOrderId() {
         StepVerifier.create(orderItemRepository.findByCustomerOrderId(6).collectList())
             .expectNextMatches(items -> {
                 if (items.size() != 2) return false;
@@ -33,7 +33,7 @@ class OrderItemRepositoryTest {
     }
 
     @Test
-    void testFindByCustomerOrderId_Empty() {
+    void findByCustomerOrderId_Empty() {
         StepVerifier.create(orderItemRepository.findByCustomerOrderId(999).collectList())
             .expectNextMatches(List::isEmpty)
             .verifyComplete();

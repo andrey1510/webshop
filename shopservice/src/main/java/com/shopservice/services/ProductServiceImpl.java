@@ -151,7 +151,7 @@ public class ProductServiceImpl implements ProductService {
             }
 
             Path sampleImagePath = uploadDir.resolve("sample.png");
-            if (!Files.exists(defaultImagePath)) {
+            if (!Files.exists(sampleImagePath)) {
                 try (InputStream is = getClass().getResourceAsStream("/images/sample.png")) {
                     if (is != null) Files.copy(is, sampleImagePath);
                 }

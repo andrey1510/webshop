@@ -27,7 +27,17 @@ public class SecurityConfiguration {
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
             .authorizeExchange(exchanges -> exchanges
-                .pathMatchers("/", "/users", "/login", "/register", "/static/**", "/register", "/products", "/products/**", "/product-creator").permitAll()
+                .pathMatchers(
+                    "/",
+                    "/login",
+                    "/register",
+                    "/static/**",
+                    "/register",
+                    "/products",
+                    "/products/**",
+                    "/uploads/**",
+                    "/product-creator")
+                .permitAll()
                 .pathMatchers("/cart/**", "/orders/**").hasRole("USER")
                 .anyExchange().authenticated()
             )
@@ -51,7 +61,8 @@ public class SecurityConfiguration {
             .headers(headers -> headers
                 .frameOptions(frameOptions -> frameOptions.disable())
                 .referrerPolicy(
-                    referrer -> referrer.policy(ReferrerPolicyServerHttpHeadersWriter.ReferrerPolicy.SAME_ORIGIN)))
+                    referrer -> referrer.policy(
+                        ReferrerPolicyServerHttpHeadersWriter.ReferrerPolicy.SAME_ORIGIN)))
             .exceptionHandling(handling -> handling
                 .authenticationEntryPoint((exchange, e) ->
                     Mono.fromRunnable(() -> {

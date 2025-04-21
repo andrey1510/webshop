@@ -30,7 +30,7 @@ class OrderItemProductRepositoryTest {
     }
 
     @Test
-    void testFindByCustomerOrderIdWithProduct() {
+    void findByCustomerOrderIdWithProduct() {
         StepVerifier.create(repository.findByCustomerOrderIdWithProduct(8).collectList())
             .expectNextMatches(items -> items.stream()
                 .filter(item -> item.getProductId() == 8)
@@ -46,7 +46,7 @@ class OrderItemProductRepositoryTest {
     }
 
     @Test
-    void testFindByCustomerOrderIdWithProduct_CheckQuantities() {
+    void findByCustomerOrderIdWithProduct_CheckQuantities() {
         StepVerifier.create(repository.findByCustomerOrderIdWithProduct(6).collectList())
             .expectNextMatches(items -> items.stream()
                 .filter(item -> item.getProductId() == 6)
@@ -62,7 +62,7 @@ class OrderItemProductRepositoryTest {
     }
 
     @Test
-    void testFindByCustomerOrderIdWithProduct_OrderNotExists() {
+    void findByCustomerOrderIdWithProduct_OrderNotExists() {
         StepVerifier.create(repository.findByCustomerOrderIdWithProduct(999).collectList())
             .expectNextMatches(List::isEmpty)
             .verifyComplete();

@@ -54,17 +54,6 @@ spring:
             client-secret: XZxKQ8kk6Rrdbe7RnsfwtBTgHkwAqQjm
             scope: openid, profile, email
 
-logging:
-  level:
-    org:
-      springframework:
-        web: DEBUG
-        security: DEBUG
-    com:
-      shopservice: TRACE
-    io.r2dbc.postgresql.QUERY: DEBUG
-    io.r2dbc.postgresql.PARAM: DEBUG
-
 images:
   upload-directory: ./uploads/
 

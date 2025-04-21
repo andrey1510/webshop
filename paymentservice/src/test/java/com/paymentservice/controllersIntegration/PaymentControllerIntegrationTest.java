@@ -1,6 +1,7 @@
 package com.paymentservice.controllersIntegration;
 
 import com.paymentservice.configs.TestDatabaseConfig;
+import com.paymentservice.configs.TestSecurityConfig;
 import com.paymentservice.dto.PaymentRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,7 +20,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 @SpringBootTest
 @AutoConfigureWebTestClient
 @ActiveProfiles("test")
-@Import(TestDatabaseConfig.class)
+@Import({TestDatabaseConfig.class, TestSecurityConfig.class})
 @SpringJUnitConfig
 class PaymentControllerIntegrationTest {
 
@@ -38,17 +39,21 @@ class PaymentControllerIntegrationTest {
         databaseInitializer.afterPropertiesSet();
     }
 
+    private WebTestClient.RequestHeadersSpec<?> addAuth(WebTestClient.RequestHeadersSpec<?> spec) {
+        return spec.header("Authorization", "Bearer test-token");
+    }
+
     @Test
-    void testCheckFunds_SufficientBalance() {
+    void checkFunds_SufficientBalance() {
         int userId = 1;
         double amount = 500.0;
 
-        webTestClient.get()
+        addAuth(webTestClient.get()
             .uri(uriBuilder -> uriBuilder
                 .path("/check")
                 .queryParam("id", userId)
                 .queryParam("amount", amount)
-                .build())
+                .build()))
             .exchange()
             .expectStatus().isOk()
             .expectBody()
@@ -61,12 +66,12 @@ class PaymentControllerIntegrationTest {
         int userId = 2;
         double amount = 1500.0;
 
-        webTestClient.get()
+        addAuth(webTestClient.get()
             .uri(uriBuilder -> uriBuilder
                 .path("/check")
                 .queryParam("id", userId)
                 .queryParam("amount", amount)
-                .build())
+                .build()))
             .exchange()
             .expectStatus().isOk()
             .expectBody()
@@ -80,10 +85,10 @@ class PaymentControllerIntegrationTest {
             .id(3)
             .amount(300.0);
 
-        webTestClient.post()
+        addAuth(webTestClient.post()
             .uri("/pay")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(request)
+            .bodyValue(request))
             .exchange()
             .expectStatus().isOk()
             .expectBody()
@@ -97,14 +102,27 @@ class PaymentControllerIntegrationTest {
             .id(1)
             .amount(15000.0);
 
-        webTestClient.post()
+        addAuth(webTestClient.post()
             .uri("/pay")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(request)
+            .bodyValue(request))
             .exchange()
             .expectStatus().isBadRequest()
             .expectBody()
             .jsonPath("$.id").isEqualTo(request.getId())
             .jsonPath("$.isBalanceSufficient").isEqualTo(false);
     }
+
+    @Test
+    void testUnauthenticatedAccess_ShouldReturnUnauthorized() {
+        webTestClient.get()
+            .uri(uriBuilder -> uriBuilder
+                .path("/check")
+                .queryParam("id", 1)
+                .queryParam("amount", 100.0)
+                .build())
+            .exchange()
+            .expectStatus().isUnauthorized();
+    }
+
 }

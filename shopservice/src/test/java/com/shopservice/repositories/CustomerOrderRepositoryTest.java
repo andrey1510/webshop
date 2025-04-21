@@ -23,7 +23,7 @@ class CustomerOrderRepositoryTest {
     private CustomerOrderRepository customerOrderRepository;
 
     @Test
-    void testFindByStatus() {
+    void findByStatus() {
         StepVerifier.create(customerOrderRepository.findByStatus(OrderStatus.CART))
             .expectNextMatches(order -> {
                 assertEquals(OrderStatus.CART, order.getStatus());
@@ -34,7 +34,7 @@ class CustomerOrderRepositoryTest {
     }
 
     @Test
-    void testFindByIdAndStatus() {
+    void findByIdAndStatus() {
         StepVerifier.create(customerOrderRepository.findByIdAndStatus(7, OrderStatus.COMPLETED))
             .expectNextMatches(order -> {
                 assertEquals(OrderStatus.COMPLETED, order.getStatus());
@@ -45,13 +45,13 @@ class CustomerOrderRepositoryTest {
     }
 
     @Test
-    void testFindByIdAndStatus_WrongStatus() {
+    void findByIdAndStatus_WrongStatus() {
         StepVerifier.create(customerOrderRepository.findByIdAndStatus(6, OrderStatus.COMPLETED))
             .verifyComplete();
     }
 
     @Test
-    void testFindAllByStatus() {
+    void findAllByStatus() {
         StepVerifier.create(customerOrderRepository.findAllByStatus(OrderStatus.COMPLETED).collectList())
             .expectNextMatches(orders -> {
                 if (orders.size() != 2) return false;
@@ -62,7 +62,7 @@ class CustomerOrderRepositoryTest {
     }
 
     @Test
-    void testFindByIdAndStatus_WrongId() {
+    void findByIdAndStatus_WrongId() {
         StepVerifier.create(customerOrderRepository.findByIdAndStatus(999, OrderStatus.COMPLETED))
             .verifyComplete();
     }

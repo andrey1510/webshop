@@ -18,7 +18,7 @@ public class DataInitializer {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    //@EventListener(ApplicationReadyEvent.class)
+    @EventListener(ApplicationReadyEvent.class)
     public void init() {
         userRepository.deleteAll()
             .thenMany(

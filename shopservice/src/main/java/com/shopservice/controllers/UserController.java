@@ -1,12 +1,9 @@
 package com.shopservice.controllers;
 
-import com.shopservice.repositories.UserRepository;
 import com.shopservice.services.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,8 +17,6 @@ import reactor.core.publisher.Mono;
 public class UserController {
 
     private final UserService userService;
-
-    private final UserRepository userRepository;
 
     @GetMapping("/login")
     public String loginForm() {
@@ -45,19 +40,12 @@ public class UserController {
 
     @PostMapping(value = "/register", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public Mono<String> register(ServerWebExchange exchange) {
-
-        exchange.getRequest().getHeaders().forEach((k, v) ->
-            log.debug("Header: {} = {}", k, v));
-
         return exchange.getFormData()
             .flatMap(formData -> {
                 String username = formData.getFirst("username");
                 String password = formData.getFirst("password");
 
-                log.info("Registering user: {}", username);
-
                 if (password == null) {
-                    log.error("Password is null in form data");
                     exchange.getAttributes().put("error", "Password is required");
                     return Mono.just("redirect:/register?error");
                 }
@@ -72,39 +60,6 @@ public class UserController {
             });
     }
 
-
-    @GetMapping("/users")
-    public Mono<Void> listAllUsers() {
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        String testRawPassword = "password";
-
-        return userRepository.findAll()
-            .collectList()
-            .doOnNext(users -> {
-                System.out.println("\n=== Список всех пользователей ===");
-                System.out.println("Тестовый пароль для проверки: " + testRawPassword);
-                System.out.println("--------------------------------");
-
-                users.forEach(user -> {
-                    boolean passwordMatches = passwordEncoder.matches(testRawPassword, user.getPassword());
-
-                    System.out.printf(
-                        "ID: %d | Username: %s | Roles: %s | Enabled: %s%n" +
-                            "Encoded password: %s%n" +
-                            "Matches test password: %s%n" +
-                            "--------------------------------%n",
-                        user.getId(),
-                        user.getUsername(),
-                        user.getRoles(),
-                        user.isEnabled() ? "Да" : "Нет",
-                        user.getPassword(),
-                        passwordMatches ? "ДА" : "НЕТ"
-                    );
-                });
-                System.out.println("==============================\n");
-            })
-            .then(Mono.empty());
-    }
 }
 
 

@@ -21,3 +21,6 @@ INSERT INTO order_items (id, customer_order_id, product_id, quantity) VALUES
         (9,7, 7, 2),
         (10,8, 8, 1),
         (11, 8, 9, 2);
+
+INSERT INTO users (id, username, password, enabled, roles) VALUES
+        (101,'test-user', 'password', TRUE,'USER');

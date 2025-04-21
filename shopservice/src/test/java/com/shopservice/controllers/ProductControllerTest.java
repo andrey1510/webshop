@@ -1,4 +1,4 @@
-package com.shopservice.controllersIntegration;
+package com.shopservice.controllers;
 
 import com.shopservice.configs.TestDatabaseConfig;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ActiveProfiles("testintegr")
 @SpringJUnitConfig
 @Import(TestDatabaseConfig.class)
-class ProductControllerIntegrationTest {
+class ProductControllerTest {
 
     @Autowired
     private WebTestClient webTestClient;
@@ -40,7 +40,7 @@ class ProductControllerIntegrationTest {
     }
 
     @Test
-    void testGetProduct() {
+    void getProduct() {
         webTestClient.get()
             .uri("/products/6")
             .exchange()
@@ -53,7 +53,7 @@ class ProductControllerIntegrationTest {
     }
 
     @Test
-    void testGetProducts() {
+    void getProducts() {
         webTestClient.get()
             .uri("/products?page=0&size=2")
             .exchange()
@@ -66,7 +66,7 @@ class ProductControllerIntegrationTest {
     }
 
     @Test
-    void testGetProducts_WithTitleFilter() {
+    void getProducts_WithTitleFilter() {
         webTestClient.get()
             .uri("/products?title=Ноутбук")
             .exchange()
@@ -81,7 +81,7 @@ class ProductControllerIntegrationTest {
     }
 
     @Test
-    void testGetProducts_WithPriceFilter() {
+    void getProducts_WithPriceFilter() {
         webTestClient.get()
             .uri("/products?minPrice=400&maxPrice=600")
             .exchange()
@@ -96,7 +96,7 @@ class ProductControllerIntegrationTest {
     }
 
     @Test
-    void testGetProducts_WithSorting() {
+    void getProducts_WithSorting() {
         webTestClient.get()
             .uri("/products?sort=price-desc")
             .exchange()

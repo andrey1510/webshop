@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -43,6 +44,9 @@ class CartServiceImplTest {
     @Mock
     private ProductService productService;
 
+    @Mock
+    private UserService userService;
+
     @InjectMocks
     private CartServiceImpl cartService;
 
@@ -52,16 +56,21 @@ class CartServiceImplTest {
     private OrderItem cartItem2;
     private Product product1;
     private Product product2;
+    private static final Integer TEST_USER_ID = 1;
 
     @BeforeEach
     void setUp() {
+        lenient().when(userService.getCurrentUserId()).thenReturn(Mono.just(TEST_USER_ID));
+
         cartOrder = CustomerOrder.builder()
             .id(1)
+            .userId(TEST_USER_ID)
             .status(OrderStatus.CART)
             .items(new ArrayList<>())
             .build();
         completedOrder = CustomerOrder.builder()
             .id(2)
+            .userId(TEST_USER_ID)
             .status(OrderStatus.COMPLETED)
             .timestamp(LocalDateTime.now())
             .completedOrderPrice(300.0)
@@ -94,36 +103,21 @@ class CartServiceImplTest {
     }
 
     @Test
-    void testGetCurrentCartWithProducts() {
-        when(customerOrderRepository.findByStatus(OrderStatus.CART))
-            .thenReturn(Mono.empty());
-        when(customerOrderRepository.save(any(CustomerOrder.class)))
-            .thenReturn(Mono.just(cartOrder));
-        when(orderItemProductRepository.findByCustomerOrderIdWithProduct(1))
-            .thenReturn(Flux.empty());
-
-        StepVerifier.create(cartService.getCurrentCartWithProducts())
-            .expectNextMatches(order -> {
-                assertEquals(OrderStatus.CART, order.getStatus());
-                assertTrue(order.getItems().isEmpty());
-                return true;
-            })
-            .verifyComplete();
-    }
-
-    @Test
-    void testGetCurrentCartWithProducts_CreateNewCart() {
-
+    void getCurrentCartWithProducts_CreateNewCart() {
         CustomerOrder newCart = CustomerOrder.builder()
             .id(3)
+            .userId(TEST_USER_ID)
             .status(OrderStatus.CART)
             .items(new ArrayList<>())
             .build();
 
-        when(customerOrderRepository.findByStatus(OrderStatus.CART))
+        when(customerOrderRepository.findByStatusAndUserId(OrderStatus.CART, TEST_USER_ID))
             .thenReturn(Mono.empty());
-        when(customerOrderRepository.save(any(CustomerOrder.class)))
+
+        when(customerOrderRepository.save(argThat(order ->
+            order.getStatus() == OrderStatus.CART && order.getUserId().equals(TEST_USER_ID))))
             .thenReturn(Mono.just(newCart));
+
         when(orderItemProductRepository.findByCustomerOrderIdWithProduct(3))
             .thenReturn(Flux.empty());
 
@@ -131,17 +125,19 @@ class CartServiceImplTest {
             .expectNextMatches(order -> {
                 assertEquals(OrderStatus.CART, order.getStatus());
                 assertTrue(order.getItems().isEmpty());
+                assertEquals(TEST_USER_ID, order.getUserId());
                 return true;
             })
             .verifyComplete();
 
-        verify(customerOrderRepository).findByStatus(OrderStatus.CART);
-        verify(customerOrderRepository).save(any(CustomerOrder.class));
+        verify(customerOrderRepository).findByStatusAndUserId(OrderStatus.CART, TEST_USER_ID);
+        verify(customerOrderRepository).save(argThat(order ->
+            order.getStatus() == OrderStatus.CART && order.getUserId().equals(TEST_USER_ID)));
     }
 
     @Test
-    void testCompleteOrder() {
-        when(customerOrderRepository.findByStatus(OrderStatus.CART))
+    void completeOrder() {
+        when(customerOrderRepository.findByStatusAndUserId(OrderStatus.CART, TEST_USER_ID))
             .thenReturn(Mono.just(cartOrder));
         when(orderItemProductRepository.findByCustomerOrderIdWithProduct(1))
             .thenReturn(Flux.just(cartItem1, cartItem2));
@@ -159,8 +155,7 @@ class CartServiceImplTest {
     }
 
     @Test
-    void testAddItemToCart() {
-
+    void addItemToCart() {
         Product newProduct = Product.builder().id(3).price(150.0).build();
         OrderItem newItem = OrderItem.builder()
             .id(3)
@@ -170,7 +165,7 @@ class CartServiceImplTest {
             .product(newProduct)
             .build();
 
-        when(customerOrderRepository.findByStatus(OrderStatus.CART))
+        when(customerOrderRepository.findByStatusAndUserId(OrderStatus.CART, TEST_USER_ID))
             .thenReturn(Mono.just(cartOrder));
         when(productService.getProductById(3))
             .thenReturn(Mono.just(newProduct));
@@ -188,16 +183,25 @@ class CartServiceImplTest {
     }
 
     @Test
-    void testUpdateItemQuantity_WithInvalidQuantity() {
+    void updateItemQuantity_WithInvalidQuantity() {
+
+        lenient().when(userService.getCurrentUserId()).thenReturn(Mono.just(TEST_USER_ID));
+
+        lenient().when(customerOrderRepository.findByStatusAndUserId(OrderStatus.CART, TEST_USER_ID))
+            .thenReturn(Mono.just(cartOrder));
+        lenient().when(orderItemRepository.findByCustomerOrderId(cartOrder.getId()))
+            .thenReturn(Flux.just(cartItem1, cartItem2));
+
         StepVerifier.create(cartService.updateItemQuantity(1, 0))
-            .expectError(WrongQuantityException.class)
+            .expectErrorMatches(throwable ->
+                throwable instanceof WrongQuantityException &&
+                    throwable.getMessage().equals("Количество должно быть больше 0"))
             .verify();
     }
 
     @Test
-    void testRemoveCartItem() {
-
-        when(customerOrderRepository.findByStatus(OrderStatus.CART))
+    void removeCartItem() {
+        when(customerOrderRepository.findByStatusAndUserId(OrderStatus.CART, TEST_USER_ID))
             .thenReturn(Mono.just(cartOrder));
         when(orderItemRepository.findByCustomerOrderId(1))
             .thenReturn(Flux.just(cartItem1, cartItem2));
@@ -213,9 +217,20 @@ class CartServiceImplTest {
     }
 
     @Test
-    void findCartItemByProductId() {
+    void cartItemByProductId() {
+
+        cartOrder.getItems().add(cartItem1);
+        cartOrder.getItems().add(cartItem2);
+
         StepVerifier.create(cartService.findCartItemByProductId(cartOrder, 1))
-            .expectNextMatches(item -> item.getProductId().equals(1))
+            .expectNextMatches(item ->
+                item != null &&
+                    item.getProductId().equals(1) &&
+                    item.getId().equals(1))
+            .verifyComplete();
+
+        StepVerifier.create(cartService.findCartItemByProductId(cartOrder, 999))
+            .expectNextCount(0)
             .verifyComplete();
     }
 

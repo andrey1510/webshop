@@ -77,7 +77,7 @@ class ProductServiceImplTest {
     }
 
     @Test
-    void testGetProductById() {
+    void getProductById() {
         when(productRepository.findById(anyInt())).thenReturn(Mono.just(testProduct));
 
         StepVerifier.create(productService.getProductById(1))
@@ -91,7 +91,7 @@ class ProductServiceImplTest {
     }
 
     @Test
-    void testGetProductById_ProductNotExists() {
+    void getProductById_ProductNotExists() {
         when(productRepository.findById(anyInt())).thenReturn(Mono.empty());
 
         StepVerifier.create(productService.getProductById(999))
@@ -102,7 +102,7 @@ class ProductServiceImplTest {
     }
 
     @Test
-    void testGetPageableProductPreviewDtos_WithTitleFilter() {
+    void getPageableProductPreviewDtos_WithTitleFilter() {
 
         when(productRepository.countByTitleContaining(anyString())).thenReturn(Mono.just(1L));
         when(productPreviewDtoRepository.findProductPreviewDtosByTitleContaining(anyString(), any(Pageable.class)))
@@ -122,7 +122,7 @@ class ProductServiceImplTest {
     }
 
     @Test
-    void testGetPageableProductPreviewDtos_WithPriceRange() {
+    void getPageableProductPreviewDtos_WithPriceRange() {
 
         when(productRepository.countByPriceBetween(anyDouble(), anyDouble())).thenReturn(Mono.just(1L));
         when(productPreviewDtoRepository
@@ -143,7 +143,7 @@ class ProductServiceImplTest {
     }
 
     @Test
-    void testGetPageableProductPreviewDtos_NoFilters() {
+    void getPageableProductPreviewDtos_NoFilters() {
 
         when(productRepository.count()).thenReturn(Mono.just(1L));
         when(productPreviewDtoRepository.findAllProductPreviewDtos(any(Pageable.class)))
@@ -161,7 +161,7 @@ class ProductServiceImplTest {
     }
 
     @Test
-    void testCreateProduct() {
+    void createProduct() {
 
         when(filePart.filename()).thenReturn("invalid.exe");
         when(productRepository.save(any())).thenReturn(Mono.just(savedProduct));

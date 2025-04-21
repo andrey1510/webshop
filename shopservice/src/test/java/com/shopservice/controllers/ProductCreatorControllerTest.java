@@ -1,4 +1,4 @@
-package com.shopservice.controllersIntegration;
+package com.shopservice.controllers;
 
 import com.shopservice.configs.TestDatabaseConfig;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ActiveProfiles("testintegr")
 @SpringJUnitConfig
 @Import(TestDatabaseConfig.class)
-class ProductCreatorControllerIntegrationTest {
+class ProductCreatorControllerTest {
 
     @Autowired
     private WebTestClient webTestClient;
@@ -42,7 +42,7 @@ class ProductCreatorControllerIntegrationTest {
     }
 
     @Test
-    void testShowForm() {
+    void showForm() {
         webTestClient.get()
             .uri("/product-creator")
             .exchange()
@@ -55,7 +55,7 @@ class ProductCreatorControllerIntegrationTest {
     }
 
     @Test
-    void testCreateProduct() {
+    void createProduct() {
         MultipartBodyBuilder builder = new MultipartBodyBuilder();
         builder.part("title", "Новый тестовый продукт");
         builder.part("description", "Описание тестового продукта");

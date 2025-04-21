@@ -20,42 +20,42 @@ class ProductRepositoryTest {
     private ProductRepository productRepository;
 
     @Test
-    void testCountByTitleContaining() {
+    void countByTitleContaining() {
         StepVerifier.create(productRepository.countByTitleContaining("компьютер"))
             .expectNext(1L)
             .verifyComplete();
     }
 
     @Test
-    void testCountByPriceGreaterThan() {
+    void countByPriceGreaterThan() {
         StepVerifier.create(productRepository.countByPriceGreaterThan(300.0))
             .expectNext(2L)
             .verifyComplete();
     }
 
     @Test
-    void testCountByPriceLessThan() {
+    void countByPriceLessThan() {
         StepVerifier.create(productRepository.countByPriceLessThan(400.0))
             .expectNext(2L)
             .verifyComplete();
     }
 
     @Test
-    void testCountAllProducts() {
+    void countAllProducts() {
         StepVerifier.create(productRepository.countByPriceLessThan(10000.0))
             .expectNext(4L)
             .verifyComplete();
     }
 
     @Test
-    void testCountByTitleContaining_PartOfTitle() {
+    void countByTitleContaining_PartOfTitle() {
         StepVerifier.create(productRepository.countByTitleContaining("ет"))
             .expectNext(1L)
             .verifyComplete();
     }
 
     @Test
-    void testCountByPriceBetween() {
+    void countByPriceBetween() {
         StepVerifier.create(productRepository.countByPriceBetween(300.0, 500.0))
             .expectNext(2L)
             .verifyComplete();
